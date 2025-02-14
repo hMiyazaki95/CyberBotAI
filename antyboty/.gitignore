@@ -54,3 +54,6 @@ Thumbs.db
 npm-debug.log
 debug.log
 .vscode-test
+# Ignore personal notes and config files
+.hintrc
+Note.txt

@@ -1,0 +1,58 @@
+/* src/Pages.css */
+
+/* Common container for all user pages */
+.page-container {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 2rem auto;
+    background-color: #ffffff; /* Light background similar to ChatGPT's clean interface */
+    color: #202123;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Headings */
+  .page-container h1 {
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    color: #202123;
+  }
+  
+  /* Paragraphs */
+  .page-container p {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  
+  /* Form styles */
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .input {
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .button {
+    padding: 0.75rem;
+    background-color: #19c37d;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .button:hover {
+    background-color: #12875c;
+  }
+  

@@ -4,47 +4,45 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 30px; /* Thinner navbar */
   background: linear-gradient(135deg, #202123, #2d2f33);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
   z-index: 200;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  transition: background-color 0.3s;
+}
+
+/* Left side: contains the logo */
+.navbar-left {
+  display: flex;
+  align-items: center;
 }
 
 /* Logo styling */
 .navbar-logo {
-  font-size: 1.8rem;
+  font-size: 1.6rem; /* Adjusted for thinner navbar */
   font-weight: bold;
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 1px;
+  height: 30px;
 }
 
-/* Navigation links container */
-.navbar-links {
+/* Right side: container for user icon and dropdown */
+.navbar-right {
   display: flex;
-  gap: 1.5rem;
-}
-
-/* Individual navigation link */
-.nav-link {
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.2s ease;
-}
-
-.nav-link:hover {
-  color: #19c37d;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
 }
 
 /* User icon container */
 .navbar-user {
-  position: relative;
   cursor: pointer;
+  height: 30px;
 }
 
 /* User icon styling */
@@ -60,7 +58,7 @@
 /* Dropdown Menu Styling */
 .dropdown-menu {
   position: absolute;
-  top: 42px; /* slightly below the icon */
+  top: 35px; /* Adjusted for 50px header; slightly below the icon */
   right: 0;
   background-color: #2d2f33;
   border: 1px solid #3c3f45;

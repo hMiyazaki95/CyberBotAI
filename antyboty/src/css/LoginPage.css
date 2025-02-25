@@ -1,0 +1,163 @@
+/* Reset & Base Styles */
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background: #f4f4f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #333;
+}
+
+/* Container */
+.page-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+}
+
+.form-container {
+  background: #fff;
+  padding: 2.5rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+/* Header */
+.text-center {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  color: #2d3748;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus {
+  border-color: #0fa47f;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 164, 127, 0.2);
+}
+
+.button {
+  background: #0fa47f;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.button:hover {
+  background: #0c8a6b;
+}
+
+/* Login Extra */
+.login-extra {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.login-extra a {
+  color: #0fa47f;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-extra a:hover {
+  text-decoration: underline;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #cbd5e0;
+}
+
+.divider span {
+  margin: 0 0.75rem;
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+/* Social Buttons */
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+  font-size: 1rem;
+  color: #2d3748;
+}
+
+.social-btn:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.social-logo {
+  width: 20px;
+  height: 20px;
+}
+
+/* Footer */
+.footer {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.footer a {
+  color: #0fa47f;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

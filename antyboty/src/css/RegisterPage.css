@@ -161,3 +161,12 @@ body {
 .footer a:hover {
   text-decoration: underline;
 }
+
+.success-message {
+  background: #0fa47f;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  text-align: center;
+}

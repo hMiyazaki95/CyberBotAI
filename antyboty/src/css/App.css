@@ -24,87 +24,71 @@ html, body {
 
 /* ---------- Sidebar (Chat History) ---------- */
 .chat-sidebar {
-  width: 15em;
+  width: 15em; /* Fixed width */
+  min-width: 15em; /* Prevents shrinking */
   background-color: #0d0e11;
   border-right: 2px solid #2d2f33;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0; /* 🚀 Prevents it from shrinking */
 }
 
-.sidebar-title, .sidebar-title2 {
-  height: 40px; /* Thinner title bars */
+/* ---------- Sidebar Header (Search Bar) ---------- */
+.sidebar-header {
+  height: 40px;
   padding: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #a3a3a3;
-  text-align: center;
-  border-bottom: 2px solid #2d2f33;
   background-color: #18191c;
+  border-bottom: 2px solid #2d2f33;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
 }
 
-.sidebar-title2 .title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #ffffff;
-}
-
-/* Profile Icon and Dropdown */
-.navbar-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  position: relative;
-}
-
-.navbar-user {
-  cursor: pointer;
-  height: 30px;
-}
-
-.user-icon {
-  color: #ffffff;
-  transition: transform 0.2s;
-}
-
-.user-icon:hover {
-  transform: scale(1.1);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 35px;
-  right: 0;
-  background-color: #2d2f33;
-  border: 1px solid #3c3f45;
-  border-radius: 4px;
-  padding: 0.5rem 0;
-  min-width: 150px;
-  z-index: 20;
-}
-
-.dropdown-menu ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.dropdown-menu li {
-  padding: 0.5rem 1rem;
-}
-
-.dropdown-menu li a {
-  color: #ffffff;
-  text-decoration: none;
+/* ---------- Search Input Styling ---------- */
+.search-input {
+  width: 100%;
+  max-width: 220px;
+  height: 32px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1.5px solid lightgrey;
+  outline: none;
   font-size: 0.9rem;
-  display: block;
+  background-color: #222327;
+  color: #ffffff;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
-.dropdown-menu li a:hover {
-  background-color: #19c37d;
+.search-input:hover {
+  border: 2px solid lightgrey;
+  box-shadow: 0 0 10px -5px lightgrey;
 }
+
+.search-input:focus {
+  border: 2px solid grey;
+  background-color: #2d2f33;
+}
+
+.new-chat-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 8px; /* Adjust spacing */
+  display: flex;
+  align-items: center;
+}
+
+.new-chat-btn img {
+  width: 24px;   /* Adjust size as needed */
+  height: 24px;
+  filter: invert(0.7); /* Lightens the icon for dark mode */
+  transition: transform 0.2s ease;
+}
+
+.new-chat-btn:hover img {
+  transform: scale(1.1); /* Slight zoom on hover */
+}
+
 
 /* ---------- Chat History ---------- */
 .chat-history {
@@ -140,6 +124,121 @@ html, body {
   background-color: #202123;
   position: relative;
   overflow: hidden;
+  min-width: 0; /* 🚀 Prevents it from forcing the sidebar to shrink */
+}
+
+/* ---------- Chat Header (Title & Navbar) ---------- */
+.sidebar-title2 {
+  height: 40px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #a3a3a3;
+  text-align: center;
+  border-bottom: 2px solid #2d2f33;
+  background-color: #18191c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-title2 .title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+
+/* ---------- Navbar (Right Section) ---------- */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.navbar-user {
+  cursor: pointer;
+  height: 30px;
+}
+
+.user-icon {
+  color: #ffffff;
+  transition: transform 0.2s;
+}
+
+.user-icon:hover {
+  transform: scale(1.1);
+}
+
+/* 🔥 Style the Dropdown Label */
+.llm-label {
+  font-size: 0.9rem;
+  color: #d1d5db;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+/* 🔥 Container to Align Dropdown */
+.llm-dropdown-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 🔥 Style the Dropdown */
+.llm-dropdown {
+  background-color: #18191c;
+  color: #d1d5db;
+  border: 1px solid #2d2f33;
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.llm-dropdown:hover {
+  border-color: #19c37d;
+}
+
+.llm-dropdown:focus {
+  border-color: #19c37d;
+  box-shadow: 0 0 5px rgba(25, 195, 125, 0.5);
+}
+
+
+/* ---------- Dropdown Menu ---------- */
+.dropdown-menu {
+  position: absolute;
+  top: 35px;
+  right: 0;
+  background-color: #2d2f33;
+  border: 1px solid #3c3f45;
+  border-radius: 4px;
+  padding: 0.5rem 0;
+  min-width: 150px;
+  z-index: 20;
+}
+
+.dropdown-menu ul {
+  list-style: none;
+  padding: 0;
+}
+
+.dropdown-menu li {
+  padding: 0.5rem 1rem;
+}
+
+.dropdown-menu li a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: block;
+}
+
+.dropdown-menu li a:hover {
+  background-color: #19c37d;
 }
 
 /* ---------- Chat Messages ---------- */
@@ -149,7 +248,8 @@ html, body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem; /* 🔥 Reduce gap between messages */
+  /*margin-left: 10rem;*/
   word-wrap: break-word;
   max-width: 100%;
 }
@@ -158,7 +258,7 @@ html, body {
 .chat-footer-container { 
   width: 95%; 
   max-width: 600px; 
-  margin: 17px auto 17px; 
+  margin: 20px auto; 
   background-color: #333; 
   border: 3px solid #333; 
   border-radius: 10px; 
@@ -166,9 +266,7 @@ html, body {
   display: flex; 
   flex-direction: column; 
   gap: 0.5rem; 
-
 }
-
 
 .chat-footer-box {
   width: 100%;
@@ -189,6 +287,7 @@ html, body {
   text-align: center;
 }
 
+/* ---------- Chat Input Box ---------- */
 .chat-input {
   display: flex;
   gap: 0.5rem;
@@ -226,20 +325,25 @@ html, body {
 
 /* ---------- Individual Messages ---------- */
 .message {
-  max-width: 75%;
+  width: 100%; /* 🔥 Ensures all messages fill the width */
+  max-width: 100%; /* 🔥 Prevents unwanted shrinking */
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
   line-height: 1.4;
   font-family: "Roboto", monospace;
   font-size: 0.9rem;
-  margin-bottom: 0.5rem;
+  /*margin-bottom: 3rem; /* 🔥 Reduce bottom margin */
+  /*margin-right: 10rem; /* 🔥 margin between user message and right side of screen */
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .message.user {
-  background-color: #1e88e5;
+  width: -moz-fit-content; /* 🔥 Fix for Firefox */
+  width: fit-content; /* ✅ Works in Chrome, Edge, Safari */
+  max-width: 75%; /* Prevents stretching */
   align-self: flex-end;
+  background-color: #1e88e5 !important; /* 🔥 Ensures the blue background stays */
   color: #ffffff;
   border: 1px solid #3c3f45;
   border-radius: 10px;
@@ -247,33 +351,36 @@ html, body {
 }
 
 .message.bot {
+  width: 100%; /* 🔥 Make bot response take full width */
+  max-width: 100%; /* 🔥 Ensure it does not shrink */
   background-color: #30323e;
   align-self: flex-start;
   color: #d1d5db;
   border: 1px solid #2d2f33;
   border-radius: 10px;
   padding: 10px 12px;
+  box-sizing: border-box; /* 🔥 Ensure padding does not shrink width */
 }
 
+
 /* Markdown styles for bot messages */
-.message.bot ul,
-.message.bot ol {
-  padding-left: 1rem;
+.message.bot ol, 
+.message.bot ul {
+  padding-left: 1.5rem;
   margin: 0.5rem 0;
-  list-style-position: inside;
+  list-style-position: outside; /* Ensure numbers appear inline */
+  word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .message.bot li {
-  margin-bottom: 0.25rem;
-  word-wrap: break-word;
+  margin-bottom: 1rem; /*this changes vertical space between sentences*/
+  display: list-item; /* Ensure proper inline positioning */
 }
 
 /* ---------- Responsive Design ---------- */
 @media (max-width: 768px) {
-  .chat-sidebar,
-  .sidebar-title,
-  .chat-history {
+  .chat-sidebar {
     display: none;
   }
 

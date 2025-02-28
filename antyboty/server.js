@@ -146,21 +146,56 @@ Once the user completes the initial steps, CyberBot follows up:
 
 // Chatbot API Route
 app.post("/chatbot", async (req, res) => {
-  const { question } = req.body;
+  const { question, model } = req.body;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      max_tokens: 300,
-      messages: [
-        { role: "system", content: cyberBotBehavior },
-        { role: "user", content: question },
-      ],
-    });
+    let responseText = "";
 
-    res.send(response.choices[0].message.content);
+    switch (model) {
+      case "gpt-3.5-turbo":
+      case "gpt-4":
+        const openaiResponse = await openai.chat.completions.create({
+          model: model,
+          max_tokens: 300,
+          messages: [
+            { role: "system", content: cyberBotBehavior },
+            { role: "user", content: question },
+          ],
+        });
+        responseText = openaiResponse.choices[0].message.content;
+        break;
+
+      /*
+      case "claude-2":
+        const claudeResponse = await anthropic.messages.create({
+          model: "claude-2",
+          max_tokens: 300,
+          messages: [
+            { role: "system", content: cyberBotBehavior },
+            { role: "user", content: question },
+          ],
+        });
+        responseText = claudeResponse.completion;
+        break;
+      */
+
+      /*
+      case "gemini":
+        const geminiResponse = await gemini.generateText({
+          prompt: question,
+          maxTokens: 300,
+        });
+        responseText = geminiResponse.text();
+        break;
+      */
+
+      default:
+        return res.status(400).send(`The model '${model}' is not currently supported.`);
+    }
+
+    res.send(responseText);
   } catch (error) {
-    console.error("Error communicating with OpenAI:", error);
-    res.status(500).send("An error occurred while fetching the response.");
+    console.error(`Error with ${model}:`, error);
+    res.status(500).send(`An error occurred while fetching the response from ${model}.`);
   }
 });

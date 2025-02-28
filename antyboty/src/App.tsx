@@ -728,16 +728,43 @@ function App() {
     console.log("Model changed to:", selectedModel); // ✅ Debugging log
   };
 
+  const getPersonalityPrompt = (personality: string) => {
+    switch (personality) {
+      case "Professional":
+        return `You are CyberBot, a highly professional cybersecurity assistant. Your responses should be formal, precise, and direct, avoiding unnecessary casual language. Use proper cybersecurity terminology and structured explanations while maintaining a helpful, authoritative tone.`;
+      case "Friendly":
+        return `You are CyberBot, a friendly and engaging cybersecurity assistant. Your responses should be warm, approachable, and encouraging, using simple language where possible. Speak as if you are explaining to a beginner, keeping the conversation supportive and easy to follow.`;
+      case "Casual":
+        return `You are CyberBot, a relaxed and easygoing cybersecurity assistant. Your responses should be conversational, informal, and engaging, using simple analogies and making technical topics easy to understand. Feel free to use humor when appropriate.`;
+      default:
+        return `You are CyberBot, a neutral cybersecurity assistant. Provide helpful responses with a balanced tone.`;
+    }
+  };
+  
   const handleSubmit = async () => {
     if (!value.trim()) return;
   
     const userMessage: Message = { text: value, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
   
+    const aiPersonality = localStorage.getItem("aiPersonality") || "Friendly"; 
+    const responseLength = localStorage.getItem("responseLength") || "Medium";
+  
+    const personalityPrompt = getPersonalityPrompt(aiPersonality);
+    
+    const prompt = `${personalityPrompt}\n\nUser: ${value}\nAI:`;
+  
+    // Define max token count based on response length preference
+    const maxTokens = responseLength === "Short" ? 50 : responseLength === "Long" ? 200 : 100;
+  
     try {
       const res = await axios.post<{ text: string } | string>(
-        "http://localhost:3005/chatbot", // ✅ Replace with your actual backend URL
-        { question: value, model } // 🔥 Include the selected model
+        "http://localhost:3005/chatbot",
+        {
+          question: prompt,
+          model,
+          max_tokens: maxTokens, // 🔥 Now using responseLength
+        }
       );
   
       const botText = typeof res.data === "string" ? res.data : res.data.text;
@@ -751,7 +778,8 @@ function App() {
     }
   
     setValue("");
-  };  
+  };
+   
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -861,7 +889,6 @@ function App() {
                 <div className="dropdown-menu">
                   <ul>
                     <li onClick={() => openModal("dashboard")}>Dashboard</li>
-                    <li onClick={() => openModal("chat-history")}>Chat History</li>
                     <li onClick={() => openModal("account")}>Account Settings</li>
                     <li onClick={() => openModal("subscription")}>Subscription</li>
                     <li onClick={() => openModal("notifications")}>Notifications</li>

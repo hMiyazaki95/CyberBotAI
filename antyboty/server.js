@@ -1,29 +1,246 @@
-import dotenv from "dotenv";
-dotenv.config();
 
 import express from "express";
 import cors from "cors";
-import { OpenAI } from "openai";
+import dotenv from "dotenv";
+import bodyParser from "body-parser";
+import pkg from "pg";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { OpenAI } from "openai"; // ✅ Added OpenAI for Chatbot
 
+dotenv.config();
+
+const { Pool } = pkg;
 const app = express();
-const port = process.env.PORT || 3005;
+const port = process.env.PORT || 5001;
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"; // ⚠️ Use a strong secret in .env
 
-// Use the correct environment variable name (without VITE_ for server-side)
+// ✅ PostgreSQL Connection (Ensure declared once)
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
+});
+
+app.use(cors({
+  origin: "http://localhost:3000", // ✅ Adjust for Vite frontend
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type, Authorization",
+  credentials: true
+}));
+
+// ✅ Update Content Security Policy (CSP) to allow Chatbot API
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data:; " + // ✅ Allows base64 and inline images
+    "connect-src 'self' http://localhost:5001 http://localhost:3000 ws://localhost:5001 wss://localhost:5001;"
+  );
+  next();
+});
+
+
+
+app.use(bodyParser.json());
+app.use(express.json());
+
+/* ─────────────────────────────────── */
+/* ✅ User Authentication Endpoints    */
+/* ─────────────────────────────────── */
+
+// ✅ Registration Endpoint
+app.post("/api/register", async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // ✅ Check if user already exists
+    const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+
+    if (userExists.rows.length > 0) {
+      return res.status(409).json({ error: "User already exists" });
+    }
+
+    // ✅ Hash password before storing
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // ✅ Insert user into database
+    await pool.query(
+      "INSERT INTO users (username, email, password) VALUES ($1, $2, $3)",
+      [username, email, hashedPassword]
+    );
+
+    return res.status(201).json({ message: "User registered successfully" });
+
+  } catch (error) {
+    console.error("❌ Server Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ✅ Login Authentication Endpoint
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log("🔍 Login Attempt:", email); // ✅ Debug Log
+
+    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+
+    if (user.rows.length === 0) {
+      console.warn("❌ User not found:", email);
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    const storedUser = user.rows[0];
+    console.log("✅ User Found:", storedUser.email); // ✅ Debug Log
+
+    const isMatch = bcrypt.compareSync(password, storedUser.password);
+    if (!isMatch) {
+      console.warn("❌ Incorrect password for:", email);
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: storedUser.id,
+        email: storedUser.email,
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 2, // ✅ Explicit expiration (2 hours)
+      },
+      JWT_SECRET
+    );
+
+    console.log("✅ Login Successful for:", email);
+    return res.json({ message: "Login successful", token });
+
+  } catch (error) {
+    console.error("❌ Server Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ✅ Middleware to Check JWT Expiration// ✅ Middleware to Check JWT Expiration & Protect Routes
+const checkTokenExpiration = (req, res, next) => {
+  const token = req.header("Authorization")?.split(" ")[1];
+
+  if (!token) return res.status(403).json({ error: "Access Denied" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.exp * 1000 < Date.now()) {
+      console.warn("❌ Token Expired for:", decoded.email);
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error("❌ Invalid Token:", error);
+    return res.status(401).json({ error: "Invalid Token" });
+  }
+};
+
+// ✅ Protected Route Example
+app.get("/api/protected-route", checkTokenExpiration, (req, res) => {
+  res.json({ message: "This is a protected route", user: req.user });
+});
+
+
+
+// ✅ Middleware to Protect Routes (Ensure declared once)
+const authenticateToken = (req, res, next) => {
+  const token = req.header("Authorization")?.split(" ")[1];
+
+  if (!token) {
+    console.warn("⚠️ Access denied: No token provided.");
+    return res.status(403).json({ error: "Access Denied" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.exp * 1000 < Date.now()) {
+      console.warn("❌ Token expired for:", decoded.email);
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error("❌ Invalid Token:", error);
+    return res.status(401).json({ error: "Invalid Token" });
+  }
+};
+
+// ✅ Add this API endpoint
+app.get("/api/protected-route", authenticateToken, (req, res) => {
+  res.json({ message: "User is authenticated", user: req.user });
+});
+
+
+/* ─────────────────────────────────── */
+/* ✅ Chatbot Integration - OpenAI GPT */
+/* ─────────────────────────────────── */
+
+// ✅ Load OpenAI API Key (Ensure declared once)
 const apiKey = process.env.OPENAI_API_KEY;
-
 if (!apiKey) {
-  console.error("OPENAI_API_KEY is missing!");
+  console.error("❌ OPENAI_API_KEY is missing! Set it in .env");
   process.exit(1);
 }
 
-const openai = new OpenAI({ apiKey: apiKey });
+// ✅ Initialize OpenAI (Ensure declared once)
+const openai = new OpenAI({ apiKey });
 
-app.use(cors());
-app.use(express.json());
+// ✅ Chatbot API Route
+app.post("/api/chat", async (req, res) => {
+  const { question, model } = req.body;
+  console.log("📥 Received request:", { question, model });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  if (!question || !model) {
+    console.warn("❌ Missing 'question' or 'model'");
+    return res.status(400).json({ error: "Missing 'question' or 'model'" });
+  }
+
+  try {
+    console.log("🔗 Sending request to OpenAI...");
+    
+    const openaiResponse = await openai.chat.completions.create({
+      model: model,
+      max_tokens: 300,
+      messages: [
+        { role: "system", content: cyberBotBehavior },
+        { role: "user", content: question },
+      ],
+    });
+
+    let responseText = openaiResponse.choices[0]?.message?.content || "No response generated";
+
+    // ✅ Ensure response uses Markdown-friendly formatting
+    responseText = responseText.replace(/\n/g, "\n\n"); // ✅ Adds extra spacing for clarity
+
+    console.log("✅ OpenAI Response:", responseText);
+
+    return res.json({ response: responseText });
+
+  } catch (error) {
+    console.error("❌ OpenAI API Error:", error);
+    return res.status(500).json({ error: "Failed to fetch AI response" });
+  }
 });
+
+
+
+/* ─────────────────────────────────── */
+/* ✅ CyberBot Behavior (Personality)  */
+/* ─────────────────────────────────── */
 
 // CyberBot's Behavior and Identity
 const cyberBotBehavior = `🚀 **Improved CyberBot Conversation Flow**
@@ -144,58 +361,7 @@ Once the user completes the initial steps, CyberBot follows up:
   - Lets users generate PDF reports for future reference.
 `;
 
-// Chatbot API Route
-app.post("/chatbot", async (req, res) => {
-  const { question, model } = req.body;
-
-  try {
-    let responseText = "";
-
-    switch (model) {
-      case "gpt-3.5-turbo":
-      case "gpt-4":
-        const openaiResponse = await openai.chat.completions.create({
-          model: model,
-          max_tokens: 300,
-          messages: [
-            { role: "system", content: cyberBotBehavior },
-            { role: "user", content: question },
-          ],
-        });
-        responseText = openaiResponse.choices[0].message.content;
-        break;
-
-      /*
-      case "claude-2":
-        const claudeResponse = await anthropic.messages.create({
-          model: "claude-2",
-          max_tokens: 300,
-          messages: [
-            { role: "system", content: cyberBotBehavior },
-            { role: "user", content: question },
-          ],
-        });
-        responseText = claudeResponse.completion;
-        break;
-      */
-
-      /*
-      case "gemini":
-        const geminiResponse = await gemini.generateText({
-          prompt: question,
-          maxTokens: 300,
-        });
-        responseText = geminiResponse.text();
-        break;
-      */
-
-      default:
-        return res.status(400).send(`The model '${model}' is not currently supported.`);
-    }
-
-    res.send(responseText);
-  } catch (error) {
-    console.error(`Error with ${model}:`, error);
-    res.status(500).send(`An error occurred while fetching the response from ${model}.`);
-  }
+// ✅ Start the server
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
 });

@@ -743,42 +743,45 @@ function App() {
   
   const handleSubmit = async () => {
     if (!value.trim()) return;
-  
+
     const userMessage: Message = { text: value, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
-  
+
     const aiPersonality = localStorage.getItem("aiPersonality") || "Friendly"; 
     const responseLength = localStorage.getItem("responseLength") || "Medium";
-  
+
     const personalityPrompt = getPersonalityPrompt(aiPersonality);
-    
     const prompt = `${personalityPrompt}\n\nUser: ${value}\nAI:`;
-  
-    // Define max token count based on response length preference
+
     const maxTokens = responseLength === "Short" ? 50 : responseLength === "Long" ? 200 : 100;
-  
+
     try {
-      const res = await axios.post<{ text: string } | string>(
-        "http://localhost:3005/chatbot",
-        {
-          question: prompt,
-          model,
-          max_tokens: maxTokens, // 🔥 Now using responseLength
-        }
-      );
-  
-      const botText = typeof res.data === "string" ? res.data : res.data.text;
-      setMessages((prev) => [...prev, { text: botText, sender: "bot" }]);
+        console.log("📡 Sending request to backend..."); // ✅ Log before sending request
+        console.log("🔹 Request Data:", { prompt, model, maxTokens });
+
+        const res = await axios.post("http://localhost:5001/api/chat", {
+            question: prompt,
+            model,
+            max_tokens: maxTokens,
+        });
+
+        console.log("✅ Received response from backend:", res.data); // ✅ Log response
+
+        const botText = res.data?.response || "⚠️ Error: No response received";  // ✅ Handle missing responses
+        setMessages((prev) => [...prev, { text: botText, sender: "bot" }]);
+
     } catch (error) {
-      console.error("Error fetching response:", error);
-      setMessages((prev) => [
-        ...prev,
-        { text: "Error: Could not get a response.", sender: "bot" },
-      ]);
+        console.error("❌ Error fetching response:", error);
+
+        setMessages((prev) => [
+            ...prev,
+            { text: "⚠️ Error: Could not get a response.", sender: "bot" },
+        ]);
     }
-  
+
     setValue("");
-  };
+};
+
    
 
   useEffect(() => {
@@ -807,6 +810,7 @@ function App() {
     }
   }, [messages]);
 
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
   const loadChat = (chatId: number) => {
     setActiveChatId((prev) => (prev === chatId ? prev : chatId)); // Ensures state updates
@@ -818,7 +822,11 @@ function App() {
   
   const handleLogout = () => {
     localStorage.removeItem("user"); // ✅ Clear stored session
-    navigate("/login"); // ✅ Redirect user to Login page
+    setShowLogoutPopup(true);
+  
+    setTimeout(() => {
+      navigate("/login"); // ✅ Redirect after 2s
+    }, 2000);
   };
 
   return (
@@ -828,6 +836,8 @@ function App() {
       <div className="sidebar-header">
         <input
           type="text"
+          // id="search-input"
+          // name="searchInput"
           placeholder="Search Your Chat History..."
           className="search-input"
         />
@@ -903,6 +913,15 @@ function App() {
               )}
             </div>
           </div>
+          {/* ✅ Success Popup for Logout */}
+            {showLogoutPopup && (
+              <div className="popup-container">
+                <div className="popup">
+                  <h2>👋 See You Soon!</h2>
+                  <p>You have successfully logged out.</p>
+                </div>
+              </div>
+            )}
         </div>
 
         {/* Chat Messages */}
@@ -932,6 +951,8 @@ function App() {
             <div className="chat-input">
               <input
                 type="text"
+                // id="chat-input" // ✅ Add ID
+                // name="chatInput" // ✅ Add Name
                 value={value}
                 onChange={onChange}
                 placeholder="Enter your question..."

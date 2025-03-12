@@ -162,6 +162,7 @@ body {
   text-decoration: underline;
 }
 
+/* Success Message */
 .success-message {
   background: #0fa47f;
   color: white;
@@ -169,4 +170,61 @@ body {
   border-radius: 6px;
   margin-bottom: 1rem;
   text-align: center;
+}
+
+/* 🔥 ERROR POPUP MODAL STYLES */
+.popup-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.popup {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-in-out;
+  max-width: 400px;
+}
+
+.popup h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #e74c3c;
+}
+
+.popup p {
+  font-size: 16px;
+  color: #444;
+  margin: 15px 0;
+}
+
+.close-btn {
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #c0392b;
+}
+
+/* ✅ Smooth Fade-in Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

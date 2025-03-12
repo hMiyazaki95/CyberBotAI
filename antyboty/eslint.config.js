@@ -23,6 +23,10 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      'no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' }, // ✅ Allows unused function arguments prefixed with "_"
+      ],
     },
   },
-)
+);

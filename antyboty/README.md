@@ -48,3 +48,12 @@ export default tseslint.config({
   },
 })
 ```
+
+
+
+To run the frontend
+cd antyboty
+npm run dev -- --port 3000
+
+To start bakend server locally
+nodemon server.js 

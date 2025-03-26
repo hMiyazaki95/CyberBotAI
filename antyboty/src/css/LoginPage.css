@@ -190,12 +190,12 @@ body {
 .popup h2 {
   margin: 0;
   font-size: 22px;
-  color: #27ae60;
+  color: #27ae60 !important;
 }
 
 .popup p {
   font-size: 16px;
-  color: #444;
+  color: #444 !important;
 }
 
 /* ✅ Smooth Fade-in Animation */

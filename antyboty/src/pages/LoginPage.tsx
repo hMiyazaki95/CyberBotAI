@@ -9,22 +9,52 @@ export default function LoginPage() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false); // ✅ Popup state
   const navigate = useNavigate();
 
+  // const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   setError("");
+
+  //   try {
+  //     const response = await fetch("http://localhost:5001/api/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email, password }),
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (response.ok) {
+  //       localStorage.setItem("token", data.token); // ✅ Store token
+  //       setShowSuccessPopup(true); // ✅ Show popup
+  //       setTimeout(() => {
+  //         setShowSuccessPopup(false);
+  //         navigate("/chat"); // ✅ Redirect to chat
+  //       }, 2000);
+  //     } else {
+  //       setError(data.error || "Invalid credentials.");
+  //     }
+  //   } catch (err) {
+  //     console.error("❌ Login Error:", err);
+  //     setError("Server error. Please try again later.");
+  //   }
+  // };
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-
+  
     try {
       const response = await fetch("http://localhost:5001/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
         localStorage.setItem("token", data.token); // ✅ Store token
+        localStorage.setItem("userId", data.userId); // ✅ Store userId
         setShowSuccessPopup(true); // ✅ Show popup
+        
         setTimeout(() => {
           setShowSuccessPopup(false);
           navigate("/chat"); // ✅ Redirect to chat
@@ -37,6 +67,7 @@ export default function LoginPage() {
       setError("Server error. Please try again later.");
     }
   };
+  
 
   return (
     <div className="page-container">

@@ -57,3 +57,8 @@ debug.log
 # Ignore personal notes and config files
 .hintrc
 Note.txt
+
+# .vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

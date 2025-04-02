@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
@@ -56,9 +56,43 @@ function App() {
   const [model, setModel] = useState<string>("gpt-4"); // Default model
 
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [botTyping, setBotTyping] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [copied, setCopied] = useState(false);
+
+
   //const userId = localStorage.getItem("userId");
-  const storedUserId = localStorage.getItem("userId") || ""; // guaranteed to be a string
+  //const storedUserId = localStorage.getItem("userId") || ""; // guaranteed to be a string
+
+  const fetchChatHistory = useCallback(async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
   
+    try {
+      const res = await axios.get(`http://localhost:5001/api/chat-history/${userId}`);
+      const chats = res.data.data.map((chat: ChatData) => ({
+        id: chat.chat_id,
+        //2
+        // chat_name: chat.chat_name?.trim() || `Chat ${index + 1}`,
+        chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
+
+        messages: chat.messages,
+      }));
+      setChatHistory(chats);
+    } catch (err) {
+      console.error("❌ Error fetching chat history:", err);
+    }
+  }, []);
+  
+  // 🔐 ✅ Redirect if user not logged in
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("You must be logged in.");
+      navigate("/login");
+    }
+  }, [navigate]); // Include navigate in the dependency array
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,67 +107,8 @@ function App() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
 
-  // useEffect(() => {
-  //   const storedUserId = localStorage.getItem("userId");
-  //   if (!storedUserId) {
-  //       console.warn("⚠️ No stored userId found.");
-  //       return;
-  //   }
-
-  //   console.log(`🔍 Fetching chat history for userId: ${storedUserId}`);
-
-  //   axios
-  //       .get(`http://localhost:5001/api/chat-history/${storedUserId}`)
-  //       .then((res) => {
-  //           console.log("✅ Full Chat History Response:", res.data);
-
-  //           if (!res.data.success) {
-  //               console.error("❌ API Error: Success flag is false.");
-  //               return;
-  //           }
-
-  //           if (!Array.isArray(res.data.data)) {
-  //               console.error("❌ API Error: Expected an array but got:", res.data.data);
-  //               return;
-  //           }
-
-  //           // ✅ Ensure chat_id is valid and unique
-  //           // const chatSessions: ChatSession[] = res.data.data.map((chat: ChatData, index: number) => {
-  //           //     const chatId = Number(chat.chat_id);
-  //           //     return {
-  //           //         id: !isNaN(chatId) ? chatId : `chat-${index + 1}`, // ✅ Assign a fallback string ID
-  //           //         chat_name: chat.chat_name || `Chat ${index + 1}`,
-  //           //         messages: Array.isArray(chat.messages) ? chat.messages : [],
-  //           //     };
-  //           // });
-
-  //           const chatSessions: ChatSession[] = res.data.data.map((chat: ChatData, index: number) => ({
-  //             id: chat.chat_id, // ✅ Always use the real DB id!
-  //             chat_name: chat.chat_name || `Chat ${index + 1}`,
-  //             messages: Array.isArray(chat.messages) ? chat.messages : [],
-  //           }));
-            
-  //           setChatHistory(chatSessions);
-            
-            
-
-  //           console.log("✅ Processed Chat Sessions:", chatSessions);
-  //           setChatHistory(chatSessions);
-
-  //           if (chatSessions.length > 0) {
-  //               const lastChat = chatSessions[chatSessions.length - 1];
-  //               setActiveChatId(lastChat.id);
-  //               setMessages(lastChat.messages);
-  //           } else {
-  //               console.warn("⚠️ No chat history found.");
-  //           }
-  //       })
-  //       .catch((error) => console.error("❌ Error loading chat history:", error));
-  // }, []);
-
-  const startNewChat = () => {
+  const startNewChat = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
       alert("User ID missing.");
@@ -141,18 +116,31 @@ function App() {
     }
   
     const newChatId = `chat_${userId}_${Date.now()}`;
-    const newChat: ChatSession = { id: newChatId, messages: [] };
-    setChatHistory((prev: ChatSession[]) => [...prev, newChat]);
+    const newChat: ChatSession = {
+      id: newChatId,
+      chat_name: "New Chat",
+      messages: [],
+    };
+  
+    setChatHistory((prev) => [...prev, newChat]);
     setActiveChatId(newChat.id);
     setMessages([]);
-    console.log("📎 Created chat with ID:", newChatId);
+    localStorage.setItem("activeChatId", newChatId.toString());
+  
+    try {
+      await axios.post("http://localhost:5001/api/save-chat-history", {
+        userId,
+        chatId: newChatId,
+        chatName: "New Chat",
+        messages: [], // empty at creation
+      });
+      console.log("✅ New chat saved to DB");
+    } catch (error) {
+      console.error("❌ Failed to save new chat to DB:", error);
+    }
   };
   
 
-   
-
-  
-  
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value);
   };
@@ -161,90 +149,10 @@ function App() {
     setDropdownVisible((prev) => !prev);
   };
 
-  // const startNewChat = () => {
-  //   const newChat: ChatSession = { id: String(Date.now()), messages: [] };
-  //   setChatHistory((prev) => [...prev, newChat]);
-  //   setActiveChatId(newChat.id);
-  //   setMessages([]);
-  // };
-
-
-  // const toggleMenu = (chatId: string) => {
-  //   setMenuOpen((prev: string | null) => (prev === chatId ? null : chatId));
-  // };
-
   const toggleMenu = (chatId: string) => {
     setMenuOpen((prev) => (prev === chatId ? null : chatId));
   };
 
-  
-  // const deleteChat = async (userId: string, chatId: string) => {
-  //   console.log("🧹 Deleting chat with ID:", chatId);
-  //   if (!userId) {
-  //     alert("User ID missing.");
-  //     return;
-  //   }
-  
-  //   if (confirm("Are you sure you want to delete this chat?")) {
-  //     try {
-  //       const res = await axios.delete(
-  //         `http://localhost:5001/api/delete-chat/${userId}/${chatId}`
-  //       );
-  //       console.log(`✅ Chat ${chatId} deleted from DB`);
-  
-  //       if (res.data.success) {
-  //         setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId));
-          
-  //         if (activeChatId === chatId) {
-  //           setActiveChatId(null);
-  //           setMessages([]);
-  //         }
-  //       } else {
-  //         alert("Server responded but deletion failed.");
-  //         console.warn("⚠️ Server delete response:", res.data);
-  //       }
-  //     } catch (err) {
-  //       console.error("❌ Failed to delete chat:", err);
-  //       alert("Failed to delete chat from server.");
-  //     }
-  //   }
-  // };
-  
-  // const deleteChat = async (userId: string, chatId: string) => {
-  //   console.log("🧹 Deleting chat with ID:", chatId);
-  //   if (!userId) {
-  //     alert("User ID missing.");
-  //     return;
-  //   }
-  
-  //   // ✅ Normalize ID (chat-1 → chat_1)
-  //   const normalizedChatId = chatId.replace(/-/g, "_");
-  
-  //   if (confirm("Are you sure you want to delete this chat?")) {
-  //     try {
-  //       const res = await axios.delete(
-  //         `http://localhost:5001/api/delete-chat/${userId}/${normalizedChatId}`
-  //       );
-  
-  //       console.log(`✅ Chat ${normalizedChatId} deleted from DB`);
-  
-  //       if (res.data.success) {
-  //         setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId));
-  
-  //         if (activeChatId === chatId) {
-  //           setActiveChatId(null);
-  //           setMessages([]);
-  //         }
-  //       } else {
-  //         alert("Server responded but deletion failed.");
-  //         console.warn("⚠️ Server delete response:", res.data);
-  //       }
-  //     } catch (err) {
-  //       console.error("❌ Failed to delete chat:", err);
-  //       alert("Failed to delete chat from server.");
-  //     }
-  //   }
-  // };
   
   const deleteChat = async (userId: string, chatId: string) => {
     console.log("🧹 Deleting chat with ID:", chatId);
@@ -281,24 +189,71 @@ function App() {
   
   
   
-  const renameChat = (chatId: string) => {
+  const renameChat = async (chatId: string) => {
     const newName = prompt("Enter a new name for this chat:");
-    if (newName) {
-      setChatHistory((prev) =>
-        prev.map((chat) => (chat.id === chatId ? { ...chat, chat_name: newName } : chat))
-      );
+    const userId = localStorage.getItem("userId");
+  
+    if (newName && userId) {
+      try {
+        // 🔄 Update frontend immediately
+        setChatHistory((prev) =>
+          prev.map((chat) =>
+            chat.id === chatId ? { ...chat, chat_name: newName } : chat
+          )
+        );
+  
+        // 🔄 Update backend
+        await axios.post("http://localhost:5001/api/update-chat-name", {
+          userId,
+          chatId,
+          newName,
+        });
+  
+        // 🔄 Refetch latest chat history from backend
+        await fetchChatHistory();
+  
+        console.log("✅ Chat name updated successfully.");
+      } catch (err) {
+        console.error("❌ Error renaming chat:", err);
+        alert("Failed to update chat name.");
+      }
     }
   };
+  
 
   const archiveChat = (chatId: string) => {
     console.log(`Chat ${chatId} archived.`);
   };
 
+
+  // const shareChat = (chatId: string) => {
+  //   const shareLink = `http://localhost:3000/chat/${chatId}`; // Replace this with my real domain later when I deploy it in cloud service
+  //   navigator.clipboard.writeText(shareLink);
+  //   alert("✅ Chat link copied to clipboard!");
+  //   setCopied(true);
+  //   setTimeout(() => setCopied(false), 2000);
+  // };
+
   const shareChat = (chatId: string) => {
-    const shareLink = `https://yourapp.com/chat/${chatId}`;
+    // const chat = chatHistory.find((c) => c.id === chatId);
+    // const fullName = chat?.chat_name?.trim() || `Chat ${chatId}`;
+    // const shareLink = `http://localhost:3000/chat/${chatId}`;
+  
+    // const content = `${fullName}\n${shareLink}`;
+    // navigator.clipboard.writeText(content);
+  
+    // setCopied(true);
+    // setTimeout(() => setCopied(false), 2000);
+
+
+    const shareLink = `http://localhost:3000/chat/${chatId}`;
     navigator.clipboard.writeText(shareLink);
-    alert("Chat link copied to clipboard!");
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+    
+  
 
   const openModal = (page: string) => {
     setModalPage(page);
@@ -331,71 +286,36 @@ function App() {
     }
   };
   
-  
-  // const handleSubmit = async () => {
-  //   if (!value.trim()) return;
-
-  //   const userId = localStorage.getItem("userId"); 
-  //   if (!userId) {
-  //       console.error("❌ Error: userId is missing!");
-  //       setMessages((prev) => [
-  //           ...prev,
-  //           { text: "⚠️ Error: User not authenticated.", sender: "bot" },
-  //       ]);
-  //       return;
-  //   }
-
-  //   const userMessage: Message = { text: value, sender: "user" };
-
-  //   // ✅ Ensure chat session exists before adding message
-  //   if (!activeChatId) {
-  //     const newChatId = `chat_${userId}_${Date.now()}`;
-  //     const newChat: ChatSession = {
-  //       id: newChatId,
-  //       chat_name: "New Chat",
-  //       messages: [userMessage],
-  //     };
-  //     setChatHistory((prev) => [...prev, newChat]);
-  //     setActiveChatId(newChatId);
-  //     setMessages([userMessage]);
+  // 1️⃣ Summarize the bot's message in 4-6 words
+    // const summarizeResponse = async (botText: string): Promise<string | null> => {
+    //   try {
+    //     const summaryPrompt = `Summarize this into a short chat title:\n${botText}`;
+    //     const response = await axios.post("http://localhost:5001/api/summarize", {
+    //       prompt: summaryPrompt,
+    //       model: "gpt-3.5-turbo",
+    //     });
+    //     return response.data?.response?.trim() ?? null;
+    //   } catch (error) {
+    //     console.error("❌ Error summarizing response:", error);
+    //     return null;
+    //   }
+    // };
     
-  //     // ✅ Save new chat + first user message to MongoDB
-  //     await axios.post("http://localhost:5001/api/save-chat-history", {
-  //       userId,
-  //       chatId: newChatId,
-  //       chatName: "New Chat",
-  //       messages: [
-  //         {
-  //           text: value,
-  //           sender: "user",
-  //           timestamp: new Date(),
-  //         },
-  //       ],
-  //     });
-  //   } else {
-  //     setMessages((prev) => [...prev, userMessage]);
-  //     setChatHistory((prev) =>
-  //       prev.map((chat) =>
-  //         chat.id === activeChatId
-  //           ? { ...chat, messages: [...chat.messages, userMessage] }
-  //           : chat
-  //       )
-  //     );
-  //   }
-    // 1️⃣ Summarize the bot's message in 4-6 words
-    const summarizeResponse = async (botText: string): Promise<string | null> => {
+    const summarizeResponse = async (botText: string, userText: string): Promise<string | null> => {
       try {
-        const summaryPrompt = `Summarize this into a short chat title:\n${botText}`;
         const response = await axios.post("http://localhost:5001/api/summarize", {
-          prompt: summaryPrompt,
-          model: "gpt-3.5-turbo",
+          messages: [
+            { text: userText, sender: "user" },
+            { text: botText, sender: "bot" }
+          ]
         });
-        return response.data?.response?.trim() ?? null;
+        return response.data?.summary?.trim() ?? null;
       } catch (error) {
         console.error("❌ Error summarizing response:", error);
         return null;
       }
     };
+    
     
 
   const handleSubmit = async () => {
@@ -412,6 +332,8 @@ function App() {
   }
 
   const userMessage: Message = { text: value, sender: "user" };
+  setValue(""); // ✅ Clear input immediately after capturing the value
+
   let currentChatId = activeChatId;
 
   if (!currentChatId) {
@@ -442,6 +364,7 @@ function App() {
   const prompt = `${personalityPrompt}\n\nUser: ${value}\nAI: If the user's question is not related to cybersecurity, respond with: "I specialize in cybersecurity topics! Please ask me something related to online safety, ethical hacking, or privacy." Otherwise, answer the question.`;
 
   try {
+    setBotTyping(true);
     const res = await axios.post("http://localhost:5001/api/chat", {
       prompt,
       question: value,
@@ -449,6 +372,7 @@ function App() {
       userId,
       chatId: currentChatId,
     });
+    setBotTyping(false);
 
     const botMessage: Message = {
       text: res.data?.response || "⚠️ Error: No response received",
@@ -465,16 +389,36 @@ function App() {
     );
 
     try {
-      await axios.post("http://localhost:5001/api/save-chat-history", {
+      //2
+      // await axios.post("http://localhost:5001/api/save-chat-history", {
+      //   userId,
+      //   chatId: currentChatId,
+      //   chatName: "User Chat",
+      //   messages: [
+      //     { text: value, sender: "user", timestamp: new Date() },
+      //     { text: botMessage.text, sender: "bot", timestamp: new Date() },
+      //   ],
+      // });
+      const saveRes = await axios.post("http://localhost:5001/api/save-chat-history", {
         userId,
         chatId: currentChatId,
-        chatName: "User Chat",
+        chatName: "New Chat",
         messages: [
           { text: value, sender: "user", timestamp: new Date() },
           { text: botMessage.text, sender: "bot", timestamp: new Date() },
         ],
       });
+      
+      const backendChatName = saveRes.data.chat_name;
       console.log("✅ Chat history saved successfully.");
+      setChatHistory((prev) =>
+        prev.map((chat) =>
+          chat.id === currentChatId
+            ? { ...chat, chat_name: backendChatName }
+            : chat
+        )
+      );
+      
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error("❌ Error saving chat history:", error.response?.data || error.message);
@@ -483,24 +427,36 @@ function App() {
       }
     }
 
-    const summary = await summarizeResponse(botMessage.text);
+    const summary = await summarizeResponse(botMessage.text, value);
+    if (!summary) {
+      console.warn("⚠️ Skipping chat name update due to missing summary.");
+      return;
+    }
     console.log("🧠 Summary from summarizeResponse:", summary);
+    
 
-    setChatHistory((prev) =>
-      prev.map((chat) =>
-        chat.id === currentChatId
-          ? { ...chat, chat_name: summary || "New Chat" }
-          : chat
-      )
-    );
+    
+    //2
+    // setChatHistory((prev) =>
+    //   prev.map((chat) =>
+    //     chat.id === currentChatId
+    //       ? { ...chat, chat_name: summary || "New Chat" }
+    //       : chat
+    //   )
+    // );
+    
+    
 
     try {
       await axios.post("http://localhost:5001/api/update-chat-name", {
         userId,
         chatId: currentChatId,
-        newName: summary,
+        newName: summary, // at the update chat name chat history name should be summarized name
       });
       console.log("✅ Chat name updated successfully.");
+
+
+      await fetchChatHistory();
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error("❌ Error updating chat name:", error.response?.data || error.message);
@@ -622,92 +578,52 @@ function App() {
     }
   }, [messages]);
 
-  // useEffect(() => {
-  //   const storedUserId = localStorage.getItem("userId");
-  //   if (!storedUserId) {
-  //     console.warn("⚠️ No stored userId found.");
-  //     return;
-  //   }
-  
-  //   console.log(`🔍 Fetching chat history for userId: ${storedUserId}`);
-  
-  //   axios
-  //     .get(`http://localhost:5001/api/chat-history/${storedUserId}`)
-  //     .then((res) => {
-  //       console.log("✅ Chat history response:", res.data);
-  
-  //       if (!res.data.success) {
-  //         console.error("❌ API Error: Success flag is false.");
-  //         return;
-  //       }
-  
-  //       if (!Array.isArray(res.data.data)) {
-  //         console.error("❌ API Error: Expected an array but got:", res.data.data);
-  //         return;
-  //       }
-
-        
-  //       setChatHistory(
-  //         res.data.data
-  //           .filter((chat: ChatData) => {
-  //             if (!chat.chat_id && !chat.id) {
-  //               console.warn("❗ Skipping chat with missing chat_id:", chat);
-  //               return false;
-  //             }
-  //             return true;
-  //           })
-  //           .map((chat: ChatData, index: number) => ({
-  //             id: chat.chat_id || chat.id, // fallback
-  //             chat_name: chat.chat_name || `Chat ${index + 1}`,
-  //             messages: Array.isArray(chat.messages) ? chat.messages : [],
-  //           }))
-  //       );
-        
-        
-  
-  //       // ✅ Auto-select the latest chat session
-  //       if (res.data.data.length > 0) {
-  //         const lastChat = res.data.data[res.data.data.length - 1];
-  //         // const parsedLastId = Number(lastChat.chat_id);
-  //         // setActiveChatId(!isNaN(parsedLastId) ? parsedLastId : `chat-${res.data.data.length}`);
-  //         setActiveChatId(lastChat.chat_id); // ✅ use string ID directly
-  //         setMessages(Array.isArray(lastChat.messages) ? lastChat.messages : []);
-  //       } 
-  //       else {
-  //         console.warn("⚠️ No chat history found.");
-  //       }
-  //     })
-  //     .catch((error) => console.error("❌ Error loading chat history:", error));
-  // }, []);
   
   useEffect(() => {
-    const storedUserId = localStorage.getItem("userId");
+    // const storedUserId = localStorage.getItem("userId");
+    localStorage.getItem("userId")
     const storedActiveChatId = localStorage.getItem("activeChatId");
   
-    if (!storedUserId) {
+    if (!localStorage.getItem("userId")) {
       console.warn("⚠️ No stored userId found.");
       return;
     }
   
-    console.log(`🔍 Fetching chat history for userId: ${storedUserId}`);
+    console.log(`🔍 Fetching chat history for userId: ${localStorage.getItem("userId")}`);
   
     axios
-      .get(`http://localhost:5001/api/chat-history/${storedUserId}`)
+      .get(`http://localhost:5001/api/chat-history/${localStorage.getItem("userId")}`)
       .then((res) => {
         if (!res.data.success || !Array.isArray(res.data.data)) {
           console.error("❌ Invalid chat history response:", res.data);
           return;
         }
   
+        // const chatSessions: ChatSession[] = res.data.data
+        //   // .filter((chat: ChatData) => chat.chat_id || chat.id)
+        //   .filter((chat: ChatData) => (chat.chat_id || chat.id) && Array.isArray(chat.messages))
+        //   .map((chat: ChatData, index: number) => ({
+        //     id: chat.chat_id || chat.id,
+        //     chat_name: chat.chat_name?.trim() || `Chat ${index + 1}`,
+        //     messages: Array.isArray(chat.messages) ? chat.messages : [],
+        //   }));
+        //   console.log("🧠 Processed chat sessions:", chatSessions);
+        //2
+        // setChatHistory(chatSessions);
+
         const chatSessions: ChatSession[] = res.data.data
-          .filter((chat: ChatData) => chat.chat_id || chat.id)
+          // .filter((chat: ChatData) => chat.chat_id || chat.id)
+          .filter((chat: ChatData) => (chat.chat_id || chat.id) && Array.isArray(chat.messages))
           .map((chat: ChatData, index: number) => ({
-            id: chat.chat_id || chat.id,
-            chat_name: chat.chat_name || `Chat ${index + 1}`,
-            messages: Array.isArray(chat.messages) ? chat.messages : [],
+            id: chat.chat_id || chat.id || `temp_${index}`, // fallback ID
+            chat_name: chat.chat_name?.trim() || `Chat ${index + 1}`,
+            messages: chat.messages || [],
           }));
-  
-        setChatHistory(chatSessions);
+          console.log("🧠 Processed chat sessions:", chatSessions);
+        //2
+
+        setChatHistory(chatSessions.reverse());
+
   
         // ✅ Restore last active chat from localStorage if available
         const foundChat = chatSessions.find(chat => chat.id === storedActiveChatId);
@@ -763,6 +679,14 @@ function App() {
       alert("Failed to reset chats from backend.");
     }
   };
+
+
+  const filteredChats = chatHistory.filter((chat) =>
+    chat.chat_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    chat.messages.some((msg) =>
+      msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
   
   
 
@@ -772,13 +696,21 @@ function App() {
       {/* Sidebar */}
       <div className="chat-sidebar">
         <div className="sidebar-header">
-          <input
+         {/*  <input
             type="text"
             // id="search-input"
             // name="searchInput"
             placeholder="Search Your Chat History..."
             className="search-input"
+          />*/}
+          <input
+            type="text"
+            placeholder="Search Your Chat History..."
+            className="search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
+
           <button className="new-chat-btn" onClick={startNewChat}>
           <img src="../public/assets/chat-plus.svg" alt="New Chat" />
           </button>
@@ -788,12 +720,19 @@ function App() {
 
 
         <div className="chat-history">
-          {chatHistory.map((chat) => {
+          {filteredChats.map((chat, index) => {
             console.log("🧪 Checking chat.id:", chat.id, "menuOpen:", menuOpen);
+            const safeId = chat.id || `fallback-${index}`;
             return (
+              // <div
+              //   key={chat.id}
+              //   // className={`chat-history-item ${menuOpen === chat.id ? "menu-open" : ""}`}
+              //   className={`chat-history-item ${menuOpen === safeId ? "menu-open" : ""}`}
+              // >
               <div
-                key={chat.id}
-                className={`chat-history-item ${menuOpen === chat.id ? "menu-open" : ""}`}
+                key={safeId}
+                // className={`chat-history-item ${menuOpen === chat.id ? "menu-open" : ""}`}
+                className={`chat-history-item ${menuOpen === safeId ? "menu-open" : ""}`}
               >
                 {/* <button
                   className={`chat-button ${activeChatId === chat.id ? "active" : ""}`}
@@ -825,8 +764,9 @@ function App() {
                       <li onClick={() => shareChat(String(chat.id))}>Share</li>
                       <li onClick={() => renameChat(String(chat.id))}>Rename</li>
                       <li onClick={() => archiveChat(String(chat.id))}>Archive</li>
-                      <li onClick={() => deleteChat(storedUserId, String(chat.id))} className="delete">Delete</li>
+                      <li onClick={() => deleteChat(localStorage.getItem("userId") || "", String(chat.id))} className="delete">Delete</li>
                     </ul>
+                    {copied && <div className="copy-popup">🔗 Link copied!</div>}
                   </div>
                 )}
               </div>
@@ -923,15 +863,20 @@ function App() {
               )}
             </div>
           ))} */}
-          {messages.map((msg: Message, index) => (
-            <div key={index} className={`message ${msg.sender}`}>
-              {msg.sender === "bot" ? (
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
-              ) : (
-                msg.text
-              )}
+          {messages.map((msg: Message) => (
+            <div key={`${msg.timestamp}-${msg.text}`} className={`message ${msg.sender}`}>
+            {msg.sender === "bot" ? (
+              <ReactMarkdown>{msg.text}</ReactMarkdown>
+            ) : (
+              msg.text
+            )}
             </div>
           ))}
+          {botTyping && (
+            <div className="message bot typing-indicator">
+              <em>CyberBot is typing...</em>
+            </div>
+          )}
 
           <div ref={messagesEndRef} />
         </div>

@@ -1,4 +1,4 @@
-import React from "react";
+// import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
@@ -20,6 +20,7 @@ export default function AppRouter() {
         
         {/* 🔥 Protect the Chat Route */}
         <Route path="/chat" element={<ProtectedRoute element={<ChatApp />} />} />
+        <Route path="/chat/:chatId" element={<ProtectedRoute element={<ChatApp />} />} />
       </Routes>
     </Router>
   );

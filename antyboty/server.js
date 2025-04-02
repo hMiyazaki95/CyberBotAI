@@ -18,6 +18,8 @@ const app = express();
 const port = process.env.PORT || 5001;
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"; // ⚠️ Use a strong secret in .env
 
+
+
 // ✅ MongoDB Connection (AFTER loading env variables)
 const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
@@ -419,11 +421,11 @@ app.post("/api/chat", async (req, res) => {
       ],
     };
 
-    await ChatHistory.findOneAndUpdate(
-      { chat_id: chatId },
-      { $push: { messages: { $each: chatEntry.messages } } },
-      { upsert: true, new: true }
-    );
+    // await ChatHistory.findOneAndUpdate(
+    //   { chat_id: chatId, user_id: userId},
+    //   { $push: { messages: { $each: chatEntry.messages } } },
+    //   { upsert: true, new: true }
+    // );
 
     res.json({ response: responseText });
   } catch (error) {
@@ -441,7 +443,7 @@ app.get("/api/chat-history/:userId", async (req, res) => {
       return res.json({ success: true, data: [] });
     }
 
-    const formattedChats = chatHistory.map((chat) => ({
+    const formattedChats = chatHistory.map((chat, index) => ({
       id: chat.chat_id,
       chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
       messages: chat.messages.map((m) => ({
@@ -506,65 +508,6 @@ app.delete("/api/delete-chat/:userId/:chatId", async (req, res) => {
 });
 
 
-
-// app.post("/api/save-chat-history", async (req, res) => {
-//   const { userId, chatId, messages } = req.body;
-
-//   if (!userId || !chatId || !messages || !Array.isArray(messages)) {
-//     return res.status(400).json({ error: "Invalid parameters" });
-//   }
-
-//   try {
-//     let chatName = `Chat ${chatId}`; // Default fallback
-
-//     const firstUserMessage = messages.find((m) => m.sender === "user")?.text?.trim();
-
-//     if (firstUserMessage) {
-//       try {
-//         const openaiResponse = await openai.chat.completions.create({
-//           model: "gpt-4",
-//           max_tokens: 20,
-//           temperature: 0.5,
-//           messages: [
-//             {
-//               role: "system",
-//               content: "Generate a short and unique title for this cybersecurity-related conversation. Avoid generic words like 'Help' or 'Chat'.",
-//             },
-//             { role: "user", content: firstUserMessage },
-//           ],
-//         });
-
-//         const aiTitle = openaiResponse.choices?.[0]?.message?.content?.trim();
-//         if (aiTitle && aiTitle.length > 0) {
-//           chatName = aiTitle;
-//         }
-//       } catch (err) {
-//         console.warn("⚠️ Failed to generate title. Using fallback.");
-//       }
-//     }
-
-//     console.log(`💬 Saving chat ${chatId} for user ${userId} with name "${chatName}"`);
-
-//     const updatedChat = await ChatHistory.findOneAndUpdate(
-//       { chat_id: chatId, user_id: userId },
-//       {
-//         $setOnInsert: {
-//           user_id: userId,
-//           chat_id: chatId,
-//           chat_name: chatName,
-//         },
-//         $push: { messages: { $each: messages } },
-//       },
-//       { upsert: true, new: true }
-//     );
-
-//     res.json({ success: true, chat_name: chatName });
-//   } catch (error) {
-//     console.error("❌ Save error:", error);
-//     res.status(500).json({ error: "Failed to save chat history" });
-//   }
-// });
-
 app.post("/api/save-chat-history", async (req, res) => {
   const { userId, chatId, messages } = req.body;
 
@@ -573,7 +516,7 @@ app.post("/api/save-chat-history", async (req, res) => {
   }
 
   try {
-    let chatName = `Chat ${chatId}`; // Default fallback
+    let chatName = `Chat ${chatId}`;
 
     const firstUserMessage = messages.find((m) => m.sender === "user")?.text?.trim();
 
@@ -593,7 +536,7 @@ app.post("/api/save-chat-history", async (req, res) => {
         });
 
         const aiTitle = openaiResponse.choices?.[0]?.message?.content?.trim();
-        if (aiTitle && aiTitle.length > 0) {
+        if (aiTitle) {
           chatName = aiTitle;
         }
       } catch (err) {
@@ -616,6 +559,14 @@ app.post("/api/save-chat-history", async (req, res) => {
       { upsert: true, new: true }
     );
 
+    // If chat already existed, update the name separately
+    if (updatedChat && updatedChat.chat_name !== chatName) {
+      await ChatHistory.updateOne(
+        { chat_id: chatId, user_id: userId },
+        { $set: { chat_name: chatName } }
+      );
+    }
+
     res.json({ success: true, chat_name: chatName });
   } catch (error) {
     console.error("❌ Save error:", error);
@@ -624,10 +575,87 @@ app.post("/api/save-chat-history", async (req, res) => {
 });
 
 
+app.post("/api/update-chat-name", async (req, res) => {
+  const { userId, chatId, newName } = req.body;
+
+  if (!userId || !chatId || !newName) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  try {
+    // const chat = await ChatHistory.findOneAndUpdate(
+    //   { userId, chat_id: chatId },
+    //   { chat_name: newName },
+    //   { new: true }
+    // );  -> changed to
+
+    const chat = await ChatHistory.findOneAndUpdate(
+      { user_id: userId, chat_id: chatId },
+      { $set: { chat_name: newName } }, 
+      { new: true }
+    );
+    
+
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found" });
+    }
+
+    res.json({ success: true, data: chat });
+  } catch (err) {
+    console.error("❌ Error updating chat name:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
+app.post("/api/summarize", async (req, res) => {
+  const { messages } = req.body;
+
+
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: "No messages to summarize" });
+  }
+
+  const userMessages = messages
+    .filter((m) => m.sender === "user")
+    .map((m) => m.text)
+    .join("\n");
+
+  try {
+    const openaiResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      max_tokens: 30,
+      temperature: 0.3,
+      messages: [
+        {
+          role: "system",
+          content: "Summarize this conversation into a short and meaningful title. Avoid generic titles like 'Chat'.",
+        },
+        {
+          role: "user",
+          content: userMessages,
+        },
+      ],
+    });
+
+    const summary = openaiResponse.choices?.[0]?.message?.content?.trim();
+
+    if (!summary) {
+      return res.status(500).json({ error: "Failed to generate summary" });
+    }
+
+    return res.json({ summary });
+  } catch (error) {
+    console.error("❌ Error summarizing chat:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Error generating summary", details: error.message });
+  }
+});
 
 app.get("/api/test-delete-chat", (req, res) => {
   res.send("✅ Delete route is reachable!");
 });
+
 
 
 

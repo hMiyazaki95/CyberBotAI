@@ -17,6 +17,8 @@ import AppRouter from "./AppRouter";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AppRouter />
+    {/* <BrowserRouter> */}
+      <AppRouter />
+    {/* </BrowserRouter> */}
   </React.StrictMode>
 );

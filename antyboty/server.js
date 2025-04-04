@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { OpenAI } from "openai"; // ✅ Added OpenAI for Chatbot
 import mongoose from "mongoose";
 import ChatHistory from "./src/models/ChatHistory.js"; // Import the model
+import crypto from "crypto";
 
 
 dotenv.config({ path: "./.env" });
@@ -435,6 +436,33 @@ app.post("/api/chat", async (req, res) => {
 });
 
 
+// app.get("/api/chat-history/:userId", async (req, res) => {
+//   try {
+//     const chatHistory = await ChatHistory.find({ user_id: req.params.userId });
+
+//     if (!chatHistory.length) {
+//       return res.json({ success: true, data: [] });
+//     }
+
+//     const formattedChats = chatHistory.map((chat, index) => ({
+//       id: chat.chat_id,
+//       chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
+//       messages: chat.messages.map((m) => ({
+//         text: m.text,
+//         sender: m.sender,
+//         timestamp: m.timestamp || new Date(),
+//       })),      
+//     }));
+
+//     res.json({ success: true, data: formattedChats });
+//   } catch (error) {
+//     console.error("❌ Error fetching chat history:", error);
+//     res.status(500).json({ error: "Failed to fetch chat history" });
+//   }
+// });
+
+
+
 app.get("/api/chat-history/:userId", async (req, res) => {
   try {
     const chatHistory = await ChatHistory.find({ user_id: req.params.userId });
@@ -443,14 +471,21 @@ app.get("/api/chat-history/:userId", async (req, res) => {
       return res.json({ success: true, data: [] });
     }
 
-    const formattedChats = chatHistory.map((chat, index) => ({
+    const formattedChats = chatHistory.map((chat) => ({
       id: chat.chat_id,
       chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
       messages: chat.messages.map((m) => ({
-        text: m.text,
+        text: (() => {
+          try {
+            return decrypt(m.text); // ✅ Decrypt message
+          } catch (e) {
+            console.warn("⚠️ Failed to decrypt message:", e.message);
+            return "[Decryption Error]";
+          }
+        })(),
         sender: m.sender,
         timestamp: m.timestamp || new Date(),
-      })),      
+      })),
     }));
 
     res.json({ success: true, data: formattedChats });
@@ -459,6 +494,7 @@ app.get("/api/chat-history/:userId", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch chat history" });
   }
 });
+
 
 // ✅ DELETE Chat by userId + chatId
 // app.delete("/api/delete-chat/:userId/:chatId", async (req, res) => {
@@ -508,6 +544,72 @@ app.delete("/api/delete-chat/:userId/:chatId", async (req, res) => {
 });
 
 
+// app.post("/api/save-chat-history", async (req, res) => {
+//   const { userId, chatId, messages } = req.body;
+
+//   if (!userId || !chatId || !messages || !Array.isArray(messages)) {
+//     return res.status(400).json({ error: "Invalid parameters" });
+//   }
+
+//   try {
+//     let chatName = `Chat ${chatId}`;
+
+//     const firstUserMessage = messages.find((m) => m.sender === "user")?.text?.trim();
+
+//     if (firstUserMessage) {
+//       try {
+//         const openaiResponse = await openai.chat.completions.create({
+//           model: "gpt-4",
+//           max_tokens: 20,
+//           temperature: 0.5,
+//           messages: [
+//             {
+//               role: "system",
+//               content: "Generate a short and unique title for this cybersecurity-related conversation. Avoid generic words like 'Help' or 'Chat'.",
+//             },
+//             { role: "user", content: firstUserMessage },
+//           ],
+//         });
+
+//         const aiTitle = openaiResponse.choices?.[0]?.message?.content?.trim();
+//         if (aiTitle) {
+//           chatName = aiTitle;
+//         }
+//       } catch (err) {
+//         console.warn("⚠️ Failed to generate title. Using fallback.");
+//       }
+//     }
+
+//     console.log(`💬 Saving chat ${chatId} for user ${userId} with name "${chatName}"`);
+
+//     const updatedChat = await ChatHistory.findOneAndUpdate(
+//       { chat_id: chatId, user_id: userId },
+//       {
+//         $setOnInsert: {
+//           user_id: userId,
+//           chat_id: chatId,
+//           chat_name: chatName,
+//         },
+//         $push: { messages: { $each: messages } },
+//       },
+//       { upsert: true, new: true }
+//     );
+
+//     // If chat already existed, update the name separately
+//     if (updatedChat && updatedChat.chat_name !== chatName) {
+//       await ChatHistory.updateOne(
+//         { chat_id: chatId, user_id: userId },
+//         { $set: { chat_name: chatName } }
+//       );
+//     }
+
+//     res.json({ success: true, chat_name: chatName });
+//   } catch (error) {
+//     console.error("❌ Save error:", error);
+//     res.status(500).json({ error: "Failed to save chat history" });
+//   }
+// });
+
 app.post("/api/save-chat-history", async (req, res) => {
   const { userId, chatId, messages } = req.body;
 
@@ -518,6 +620,7 @@ app.post("/api/save-chat-history", async (req, res) => {
   try {
     let chatName = `Chat ${chatId}`;
 
+    // Get the first user message (decrypted)
     const firstUserMessage = messages.find((m) => m.sender === "user")?.text?.trim();
 
     if (firstUserMessage) {
@@ -529,7 +632,8 @@ app.post("/api/save-chat-history", async (req, res) => {
           messages: [
             {
               role: "system",
-              content: "Generate a short and unique title for this cybersecurity-related conversation. Avoid generic words like 'Help' or 'Chat'.",
+              content:
+                "Generate a short and unique title for this cybersecurity-related conversation. Avoid generic words like 'Help' or 'Chat'.",
             },
             { role: "user", content: firstUserMessage },
           ],
@@ -546,6 +650,12 @@ app.post("/api/save-chat-history", async (req, res) => {
 
     console.log(`💬 Saving chat ${chatId} for user ${userId} with name "${chatName}"`);
 
+    // ✅ Encrypt messages before saving
+    const encryptedMessages = messages.map((m) => ({
+      ...m,
+      text: encrypt(m.text),
+    }));
+
     const updatedChat = await ChatHistory.findOneAndUpdate(
       { chat_id: chatId, user_id: userId },
       {
@@ -554,12 +664,16 @@ app.post("/api/save-chat-history", async (req, res) => {
           chat_id: chatId,
           chat_name: chatName,
         },
-        $push: { messages: { $each: messages } },
+        $push: {
+          messages: {
+            $each: encryptedMessages,
+          },
+        },
       },
       { upsert: true, new: true }
     );
 
-    // If chat already existed, update the name separately
+    // Update name separately if needed
     if (updatedChat && updatedChat.chat_name !== chatName) {
       await ChatHistory.updateOne(
         { chat_id: chatId, user_id: userId },
@@ -658,6 +772,28 @@ app.get("/api/test-delete-chat", (req, res) => {
 
 
 
+/**
+ * ✅ Encryption and Decryption
+ */
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "12345678901234567890123456789012"; // 32-byte key for AES-256
+const IV_LENGTH = 16;
+
+export function encrypt(text) {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
+  return iv.toString("hex") + ":" + encrypted;
+}
+
+export function decrypt(text) {
+  const [ivHex, encryptedText] = text.split(":");
+  const iv = Buffer.from(ivHex, "hex");
+  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+  let decrypted = decipher.update(encryptedText, "hex", "utf8");
+  decrypted += decipher.final("utf8");
+  return decrypted;
+}
 
 
 

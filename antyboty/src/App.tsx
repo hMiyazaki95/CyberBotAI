@@ -14,6 +14,7 @@ import AIPreferencesPage from "./pages/AIPreferencePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
 
+
 type Message = { 
   text: string; 
   sender: "user" | "bot"; 

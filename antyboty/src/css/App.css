@@ -156,7 +156,7 @@ html, body {
 }
 
 /* 🔹 Chat Button (Fix alignment issue) */
-.chat-button {
+/* .chat-button {
   flex-grow: 1;
   background: none;
   border: none;
@@ -171,18 +171,41 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: calc(100% - 40px); /* ✅ Prevents text from overlapping with menu */
+/*} */
+
+.chat-button {
+  flex-grow: 1;
+  background: none;
+  border: none;
+  color: white;
+  text-align: left;
+  font-size: 12px;
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+
+  /* ✅ These ensure one-line truncation */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  /* ✅ Allow room for menu button (⋮) */
+  max-width: calc(100% - 40px);
 }
 
 
 
 /* 🔹 Ensure spacing and alignment */
 .chat-history-item span {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 50px); /* ✅ Prevents overflow from menu button */
+  display: inline-block;
+  white-space: nowrap;        /* 👈 Keep it single line */
+  overflow: hidden;           /* 👈 Hide overflow */
+  text-overflow: ellipsis;    /* 👈 Add ... when needed */
+  max-width: 90%;             /* 👈 Give more room before cutting off */
+  vertical-align: middle;     /* Optional: aligns text nicely with buttons */
 }
+
 
 
 

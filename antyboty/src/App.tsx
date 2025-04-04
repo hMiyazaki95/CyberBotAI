@@ -70,14 +70,20 @@ function App() {
   
     try {
       const res = await axios.get(`http://localhost:5001/api/chat-history/${userId}`);
-      const chats = res.data.data.map((chat: ChatData) => ({
-        id: chat.chat_id,
-        //2
-        // chat_name: chat.chat_name?.trim() || `Chat ${index + 1}`,
-        chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
+      // const chats = res.data.data.map((chat: ChatData) => ({
+      //   id: chat.chat_id,
+      //   //2
+      //   // chat_name: chat.chat_name?.trim() || `Chat ${index + 1}`,
+      //   chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
 
-        messages: chat.messages,
+      //   messages: chat.messages,
+      // }));
+      const chats = res.data.data.map((chat: ChatData, index: number) => ({
+        id: chat.chat_id || chat.id || `temp_${index}`,
+        chat_name: chat.chat_name || `Chat ${chat.chat_id || chat.id || index}`,
+        messages: chat.messages || [],
       }));
+      
       setChatHistory(chats);
     } catch (err) {
       console.error("❌ Error fetching chat history:", err);
@@ -97,8 +103,6 @@ function App() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-  
-      // Close if clicking outside .chat-menu or .menu-button
       if (!target.closest(".chat-menu") && !target.closest(".menu-button")) {
         setMenuOpen(null);
       }
@@ -107,7 +111,7 @@ function App() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+  
   const startNewChat = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
@@ -146,12 +150,23 @@ function App() {
   };
 
   const toggleDropdown = () => {
-    setDropdownVisible((prev) => !prev);
+    requestAnimationFrame(() => {
+      setDropdownVisible((prev) => !prev);
+    });
   };
 
   const toggleMenu = (chatId: string) => {
-    setMenuOpen((prev) => (prev === chatId ? null : chatId));
+    console.log("👆 Menu button clicked for chatId:", chatId);
+    console.log("📂 Current chatHistory IDs:", chatHistory.map((c) => c.id));
+    console.log("📌 Current menuOpen:", menuOpen);
+
+    setMenuOpen((prev) => {
+      const newState = prev === chatId ? null : chatId;
+      console.log("🔁 New menuOpen state will be:", newState);
+      return newState;
+    });
   };
+  
 
   
   const deleteChat = async (userId: string, chatId: string) => {
@@ -577,7 +592,7 @@ function App() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
+  
   
   useEffect(() => {
     // const storedUserId = localStorage.getItem("userId");
@@ -669,11 +684,13 @@ function App() {
       // Call your backend to delete all chats for this user
       const res = await axios.delete(`http://localhost:5001/api/delete-all-chats/${userId}`);
       console.log("✅ Backend chat reset response:", res.data);
-      localStorage.clear(); // clears everything
+      //localStorage.clear(); // clears everything
       // Clear frontend state
+      localStorage.removeItem("activeChatId");
       setChatHistory([]);
       setActiveChatId(null);
       setMessages([]);
+      setMenuOpen(null); // ✅ This fixes the dropdown issue after reset
     } catch (err) {
       console.error("❌ Failed to delete chat history from DB:", err);
       alert("Failed to reset chats from backend.");
@@ -721,7 +738,7 @@ function App() {
 
         <div className="chat-history">
           {filteredChats.map((chat, index) => {
-            console.log("🧪 Checking chat.id:", chat.id, "menuOpen:", menuOpen);
+            console.log("🧪 Checking chat.id:", String(chat.id), "menuOpen:", menuOpen);
             const safeId = chat.id || `fallback-${index}`;
             return (
               // <div
@@ -752,14 +769,35 @@ function App() {
                     setMessages(chat.messages);
                   }}
                 >
-                  <span>{chat.chat_name || `Chat ${chat.id}`}</span>
+                  {/* <span>{chat.chat_name || `Chat ${chat.id}`}</span> */}
+                  <span title={chat.chat_name}>
+                    {chat.chat_name
+                      ? chat.chat_name.split(" ").slice(0, 4).join(" ") + (chat.chat_name.split(" ").length > 4 ? "..." : "")
+                      : chat.messages?.[0]?.text.split(" ").slice(0, 4).join(" ") + "..." || `Chat ${chat.id}`}
+                  </span>
+
                 </button>
 
 
-                <button className="menu-button" onClick={() => toggleMenu(String(chat.id))}>⋮</button>
+                <button 
+                  className="menu-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // ⛔ Prevents event from reaching document
+                    toggleMenu(String(chat.id));
+                  }}
+                >
+                ⋮</button>
 
-                {menuOpen === chat.id && (
-                  <div className="chat-menu">
+
+                {String(menuOpen) === String(chat.id) && (
+                  <div 
+                  className="chat-menu"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log("✅ Inside chat-menu for:", chat.id);
+                  }}
+                  
+                  >
                     <ul>
                       <li onClick={() => shareChat(String(chat.id))}>Share</li>
                       <li onClick={() => renameChat(String(chat.id))}>Rename</li>

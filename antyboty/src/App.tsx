@@ -13,6 +13,7 @@ import NotificationsPage from "./pages/NotificationPage";
 import AIPreferencesPage from "./pages/AIPreferencePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
+import SettingsModal from "../src/components/SettingsModel"; // ✅ Import new modal
 
 
 type Message = { 
@@ -60,6 +61,10 @@ function App() {
   const [botTyping, setBotTyping] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
+  const [archivedChats, setArchivedChats] = useState<string[]>([]);
+
+
+  
 
 
   //const userId = localStorage.getItem("userId");
@@ -236,11 +241,6 @@ function App() {
     }
   };
   
-
-  const archiveChat = (chatId: string) => {
-    console.log(`Chat ${chatId} archived.`);
-  };
-
 
   // const shareChat = (chatId: string) => {
   //   const shareLink = `http://localhost:3000/chat/${chatId}`; // Replace this with my real domain later when I deploy it in cloud service
@@ -674,37 +674,59 @@ function App() {
   console.log("🔹 activeChatId:", activeChatId);
   console.log("🔹 messages:", messages);
 
-  const handleResetChats = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      alert("No user ID found.");
-      return;
-    }
+  // const handleResetChats = async () => {
+  //   const userId = localStorage.getItem("userId");
+  //   if (!userId) {
+  //     alert("No user ID found.");
+  //     return;
+  //   }
   
-    try {
-      // Call your backend to delete all chats for this user
-      const res = await axios.delete(`http://localhost:5001/api/delete-all-chats/${userId}`);
-      console.log("✅ Backend chat reset response:", res.data);
-      //localStorage.clear(); // clears everything
-      // Clear frontend state
-      localStorage.removeItem("activeChatId");
-      setChatHistory([]);
-      setActiveChatId(null);
-      setMessages([]);
-      setMenuOpen(null); // ✅ This fixes the dropdown issue after reset
-    } catch (err) {
-      console.error("❌ Failed to delete chat history from DB:", err);
-      alert("Failed to reset chats from backend.");
-    }
-  };
+  //   try {
+  //     // Call your backend to delete all chats for this user
+  //     const res = await axios.delete(`http://localhost:5001/api/delete-all-chats/${userId}`);
+  //     console.log("✅ Backend chat reset response:", res.data);
+  //     //localStorage.clear(); // clears everything
+  //     // Clear frontend state
+  //     localStorage.removeItem("activeChatId");
+  //     setChatHistory([]);
+  //     setActiveChatId(null);
+  //     setMessages([]);
+  //     setMenuOpen(null); // ✅ This fixes the dropdown issue after reset
+  //   } catch (err) {
+  //     console.error("❌ Failed to delete chat history from DB:", err);
+  //     alert("Failed to reset chats from backend.");
+  //   }
+  // };
 
 
-  const filteredChats = chatHistory.filter((chat) =>
+  // const filteredChats = chatHistory.filter((chat) =>
+  //   chat.chat_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //   chat.messages.some((msg) =>
+  //     msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+  //   )
+  // );
+  
+  const filteredChats = chatHistory
+  .filter(chat => !archivedChats.includes(String(chat.id))) // ✅ hide archived ones
+  .filter(chat =>
     chat.chat_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.messages.some((msg) =>
-      msg.text.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    chat.messages.some(msg => msg.text.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const archiveChat = (chatId: string) => {
+    setArchivedChats(prev => 
+      prev.includes(chatId) ? prev.filter(id => id !== chatId) : [...prev, chatId]
+    );
+  };
+  
+  useEffect(() => {
+    localStorage.setItem("archivedChats", JSON.stringify(archivedChats));
+  }, [archivedChats]);
+  
+  useEffect(() => {
+    const stored = localStorage.getItem("archivedChats");
+    if (stored) setArchivedChats(JSON.parse(stored));
+  }, []);
   
   
 
@@ -778,6 +800,8 @@ function App() {
                   </span>
 
                 </button>
+                
+
 
 
                 <button 
@@ -812,7 +836,8 @@ function App() {
             );
           })}
         </div>
-        <button
+        
+        {/* <button
           className="reset-chat-btn"
           onClick={() => {
             const confirmReset = window.confirm("Are you sure you want to delete all chats?");
@@ -822,7 +847,7 @@ function App() {
           }}
         >
           🧼 Reset Chats
-        </button>
+        </button> */}
 
         
         </div>
@@ -846,6 +871,7 @@ function App() {
               <option value="gpt-3.5-turbo">GPT-3.5-Turbo</option>
               <option value="claude-2">Claude 2</option>
               <option value="gemini">Gemini</option>
+              <option value="securebert">SecureBERT</option> {/* 👈 Add this */}
             </select>
           </div>
 
@@ -864,7 +890,7 @@ function App() {
               {dropdownVisible && (
                 <div className="dropdown-menu">
                   <ul>
-                    <li onClick={() => openModal("dashboard")}>Dashboard</li>
+                    {/* <li onClick={() => openModal("dashboard")}>Dashboard</li>
                     <li onClick={() => openModal("account")}>Account Settings</li>
                     <li onClick={() => openModal("subscription")}>Subscription</li>
                     <li onClick={() => openModal("notifications")}>Notifications</li>
@@ -873,7 +899,11 @@ function App() {
                     <li onClick={() => openModal("help")}>Help</li>
                     <li onClick={handleLogout} className="logout-button">
                       Log Out
-                    </li>
+                    </li> */}
+                    <li onClick={() => setModalPage("settings")}>Settings</li>
+                    <li onClick={() => setModalPage("privacy")}>Privacy</li>
+                    <li onClick={() => setModalPage("help")}>Help</li>
+                    <li onClick={handleLogout} className="logout-button">Log Out</li>
                     {/* ✅ Logout button works properly */}
                   </ul>
                 </div>
@@ -946,20 +976,22 @@ function App() {
       </div>
 
       {/* Modals */}
-      {modalPage && (
-        <div className="modal">
-          <div className="modal-content">
-            <button className="close-button" onClick={closeModal}>×</button>
-            {modalPage === "dashboard" && <DashboardPage onClose={closeModal} />}
-            {modalPage === "account" && <AccountPage onClose={closeModal} />}
-            {modalPage === "subscription" && <SubscriptionPage onClose={closeModal} />}
-            {modalPage === "notifications" && <NotificationsPage onClose={closeModal} />}
-            {modalPage === "ai-preferences" && <AIPreferencesPage onClose={closeModal} />}
-            {modalPage === "privacy" && <PrivacyPage onClose={closeModal} />}
-            {modalPage === "help" && <HelpPage onClose={closeModal} />}
-          </div>
-        </div>
+      {modalPage === "settings" && (
+        <SettingsModal
+          onClose={closeModal}
+          openModal={openModal}
+        />
       )}
+
+
+      {modalPage === "dashboard" && <DashboardPage onClose={() => setModalPage(null)} />}
+      {modalPage === "account" && <AccountPage onClose={() => setModalPage(null)} />}
+      {modalPage === "subscription" && <SubscriptionPage onClose={() => setModalPage(null)} />}
+      {modalPage === "notifications" && <NotificationsPage onClose={() => setModalPage(null)} />}
+      {modalPage === "ai-preferences" && <AIPreferencesPage onClose={() => setModalPage(null)} />}
+      {modalPage === "privacy" && <PrivacyPage onClose={() => setModalPage(null)} />}
+      {modalPage === "help" && <HelpPage onClose={() => setModalPage(null)} />}
+
     </div>
   );
 }

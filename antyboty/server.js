@@ -9,6 +9,8 @@ import { OpenAI } from "openai"; // ✅ Added OpenAI for Chatbot
 import mongoose from "mongoose";
 import ChatHistory from "./src/models/ChatHistory.js"; // Import the model
 import crypto from "crypto";
+import { pipeline } from "@xenova/transformers"; // 🧠 Use this instead of huggingface's Python API
+
 
 
 dotenv.config({ path: "./.env" });
@@ -267,120 +269,6 @@ if (!apiKey) {
 const openai = new OpenAI({ apiKey });
 
 // ✅ Chatbot API Route
-// app.post("/api/chat", async (req, res) => {
-//   const { question, model, userId, chatId } = req.body;// ✅ include chatId
-
-//   console.log("📥 Received Chat Request:", { question, model, userId }); // 🔍 Debug log
-
-//   if (!question || !model || !userId) {
-//     console.warn("❌ Missing parameters:", { question, model, userId });
-//     return res.status(400).json({ error: "Missing parameters" });
-//   }
-
-//   try {
-//     console.log("🔗 Sending request to OpenAI with:", { model, question });
-
-//     const openaiResponse = await openai.chat.completions.create({
-//       model: model,
-//       max_tokens: 500, // 🚀 Increased to avoid truncation
-//       temperature: 0.7, // ⚖️ Balanced randomness (lower = more predictable)
-//       messages: [
-//         // { role: "system", content: `
-//         //   You are CyberBot. You only answer cybersecurity-related questions such as online safety, ethical hacking, or digital privacy.
-//         //   If a user asks something unrelated like weather, politics, or entertainment, respond with:
-//         //   "Sorry, I only answer cybersecurity-related questions. Please ask me something about online safety, ethical hacking, or privacy."`
-//         // },
-        
-//         { role: "user", content: question } // ✅// <- just the question text
-//         // { role: "user", content: prompt }
-//       ],      
-//     });
-
-//     const responseText = openaiResponse.choices[0]?.message?.content || "No response generated";
-//     console.log("✅ OpenAI Response:", responseText);
-
-//     // ✅ Store chat in MongoDB
-//     const chatEntry = {
-//       user_id: userId,
-//       chat_id: chatId,  // ✅ Use what frontend sends
-//       chat_name: "User Chat",
-//       messages: [
-//         { text: question, sender: "user", timestamp: new Date() },
-//         { text: responseText, sender: "bot", timestamp: new Date() },
-//       ],
-//     };
-
-//     console.log("📁 Saving to MongoDB:", chatEntry);
-
-//     await ChatHistory.findOneAndUpdate(
-//       { chat_id: chatId }, // ✅ Correct usage
-//       { $push: { messages: { $each: chatEntry.messages } } },
-//       { upsert: true, new: true }
-//     );
-    
-
-//     res.json({ response: responseText });
-
-//   } catch (error) {
-//     console.error("❌ Error fetching response:", error?.response?.data || error.message || error);
-//     res.status(500).json({ error: "Failed to fetch AI response", details: error.message });
-//   }
-// });
-
-// app.post("/api/chat", async (req, res) => {
-//   const { question, prompt, model, userId, chatId } = req.body;
-
-//   if (!question || !model || !userId) {
-//     console.warn("❌ Missing parameters:", { question, model, userId });
-//     return res.status(400).json({ error: "Missing parameters" });
-//   }
-
-//   try {
-//     console.log("📨 Sending request to OpenAI:", { model, question });
-
-//     const messages = prompt
-//       ? [
-//           { role: "system", content: prompt }, // 🧠 custom personality prompt
-//           { role: "user", content: question },
-//         ]
-//       : [
-//           { role: "system", content: cyberBotBehavior }, // fallback to default
-//           { role: "user", content: question },
-//         ];
-
-//     const openaiResponse = await openai.chat.completions.create({
-//       model,
-//       max_tokens: 500,
-//       temperature: 0.7,
-//       messages,
-//     });
-
-//     const responseText = openaiResponse.choices[0]?.message?.content || "No response generated";
-//     console.log("✅ OpenAI Response:", responseText);
-
-//     const chatEntry = {
-//       user_id: userId,
-//       chat_id: chatId,
-//       chat_name: "User Chat",
-//       messages: [
-//         { text: question, sender: "user", timestamp: new Date() },
-//         { text: responseText, sender: "bot", timestamp: new Date() },
-//       ],
-//     };
-
-//     await ChatHistory.findOneAndUpdate(
-//       { chat_id: chatId },
-//       { $push: { messages: { $each: chatEntry.messages } } },
-//       { upsert: true, new: true }
-//     );
-
-//     res.json({ response: responseText });
-//   } catch (error) {
-//     console.error("❌ Error fetching response:", error?.response?.data || error.message || error);
-//     res.status(500).json({ error: "Failed to fetch AI response", details: error.message });
-//   }
-// });
-
 app.post("/api/chat", async (req, res) => {
   const { question, prompt, model, userId, chatId } = req.body;
 
@@ -388,6 +276,20 @@ app.post("/api/chat", async (req, res) => {
     console.warn("❌ Missing parameters:", { question, model, userId });
     return res.status(400).json({ error: "Missing parameters" });
   }
+
+  if (model === "securebert") {
+    try {
+      const textWithMask = question.includes("[MASK]") ? question : question + " [MASK]";
+      const hfResult = await secureBertPipeline(textWithMask);
+  
+      const responseText = hfResult?.[0]?.sequence || "No response generated by SecureBERT";
+      return res.json({ response: responseText });
+    } catch (err) {
+      console.error("❌ Hugging Face Error:", err);
+      return res.status(500).json({ error: "Hugging Face model failed", details: err.message });
+    }
+  }
+  
 
   try {
     console.log("📨 Sending request to OpenAI:", { model, question });
@@ -436,33 +338,8 @@ app.post("/api/chat", async (req, res) => {
 });
 
 
-// app.get("/api/chat-history/:userId", async (req, res) => {
-//   try {
-//     const chatHistory = await ChatHistory.find({ user_id: req.params.userId });
 
-//     if (!chatHistory.length) {
-//       return res.json({ success: true, data: [] });
-//     }
-
-//     const formattedChats = chatHistory.map((chat, index) => ({
-//       id: chat.chat_id,
-//       chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
-//       messages: chat.messages.map((m) => ({
-//         text: m.text,
-//         sender: m.sender,
-//         timestamp: m.timestamp || new Date(),
-//       })),      
-//     }));
-
-//     res.json({ success: true, data: formattedChats });
-//   } catch (error) {
-//     console.error("❌ Error fetching chat history:", error);
-//     res.status(500).json({ error: "Failed to fetch chat history" });
-//   }
-// });
-
-
-
+//working
 app.get("/api/chat-history/:userId", async (req, res) => {
   try {
     const chatHistory = await ChatHistory.find({ user_id: req.params.userId });
@@ -473,11 +350,14 @@ app.get("/api/chat-history/:userId", async (req, res) => {
 
     const formattedChats = chatHistory.map((chat) => ({
       id: chat.chat_id,
-      chat_name: chat.chat_name || `Chat ${chat.chat_id}`,
+      chat_name:
+        !chat.messages || chat.messages.length === 0
+          ? "New Chat"
+          : chat.chat_name || `Chat ${chat.chat_id}`,
       messages: chat.messages.map((m) => ({
         text: (() => {
           try {
-            return decrypt(m.text); // ✅ Decrypt message
+            return decrypt(m.text);
           } catch (e) {
             console.warn("⚠️ Failed to decrypt message:", e.message);
             return "[Decryption Error]";
@@ -487,6 +367,7 @@ app.get("/api/chat-history/:userId", async (req, res) => {
         timestamp: m.timestamp || new Date(),
       })),
     }));
+    
 
     res.json({ success: true, data: formattedChats });
   } catch (error) {
@@ -496,33 +377,8 @@ app.get("/api/chat-history/:userId", async (req, res) => {
 });
 
 
-// ✅ DELETE Chat by userId + chatId
-// app.delete("/api/delete-chat/:userId/:chatId", async (req, res) => {
-//   const { userId, chatId } = req.params;
-//   console.log(`🧹 Attempting to delete chat for userId=${userId}, chatId=${chatId}`);
 
-//   try {
-//     // Debug lookup
-//     const found = await ChatHistory.findOne({ user_id: userId, chat_id: chatId });
-//     if (!found) {
-//       console.warn("❌ No matching chat found to delete");
-//     } else {
-//       console.log("🔍 Found chat to delete:", found.chat_name);
-//     }
 
-//     const result = await ChatHistory.deleteOne({ user_id: userId, chat_id: chatId });
-//     console.log("📦 MongoDB delete result:", result);
-
-//     if (result.deletedCount === 0) {
-//       return res.status(404).json({ success: false, message: "Chat not found" });
-//     }
-
-//     res.json({ success: true, message: "Chat deleted successfully" });
-//   } catch (error) {
-//     console.error("❌ Error deleting chat:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// });
 app.delete("/api/delete-chat/:userId/:chatId", async (req, res) => {
   const { chatId } = req.params;
   console.log(`🧹 Attempting to delete chat with chatId=${chatId}`);
@@ -786,14 +642,46 @@ export function encrypt(text) {
   return iv.toString("hex") + ":" + encrypted;
 }
 
+// export function decrypt(text) {
+//   const [ivHex, encryptedText] = text.split(":");
+//   const iv = Buffer.from(ivHex, "hex");
+//   const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+//   let decrypted = decipher.update(encryptedText, "hex", "utf8");
+//   decrypted += decipher.final("utf8");
+//   return decrypted;
+// }
+
 export function decrypt(text) {
-  const [ivHex, encryptedText] = text.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
-  let decrypted = decipher.update(encryptedText, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
+  try {
+    if (!text.includes(":")) {
+      throw new Error("Malformed encrypted text (missing IV delimiter)");
+    }
+
+    const [ivHex, encryptedText] = text.split(":");
+    if (ivHex.length !== 32) {
+      throw new Error("Invalid IV length");
+    }
+
+    const iv = Buffer.from(ivHex, "hex");
+    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+
+    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+
+    return decrypted;
+  } catch (err) {
+    console.warn("⚠️ Decryption failed:", err.message);
+    return "[Decryption Error]";
+  }
 }
+
+
+let secureBertPipeline;
+
+(async () => {
+  secureBertPipeline = await pipeline("fill-mask", "Xenova/bert-base-uncased"); // temporary placeholder
+  console.log("✅ Hugging Face SecureBERT pipeline loaded");
+})();
 
 
 

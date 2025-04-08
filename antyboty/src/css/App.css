@@ -139,6 +139,26 @@ html, body {
   margin: 2px 0; /* 🔥 Add space between buttons */
 }
 
+/* 🔹 Unarchive Button (Modern Look) */
+.unarchive-btn {
+  padding: 6px 12px;
+  margin-left: auto;
+  background-color: #19c37d;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.2s ease;
+}
+
+.unarchive-btn:hover {
+  background-color: #12875c;
+  transform: scale(1.05);
+}
+
+
 /* 🔹 Hover effect */
 .chat-history-item:hover {
   /* background-color: #1c1e23; Lighter shade on hover */
@@ -192,18 +212,6 @@ html, body {
 
   /* ✅ Allow room for menu button (⋮) */
   max-width: calc(100% - 40px);
-}
-
-
-
-/* 🔹 Ensure spacing and alignment */
-.chat-history-item span {
-  display: inline-block;
-  white-space: nowrap;        /* 👈 Keep it single line */
-  overflow: hidden;           /* 👈 Hide overflow */
-  text-overflow: ellipsis;    /* 👈 Add ... when needed */
-  max-width: 90%;             /* 👈 Give more room before cutting off */
-  vertical-align: middle;     /* Optional: aligns text nicely with buttons */
 }
 
 
@@ -288,6 +296,16 @@ html, body {
   position: relative;
   overflow: hidden;
   min-width: 0; /* 🚀 Prevents it from forcing the sidebar to shrink */
+}
+
+/* 🔹 Ensure spacing and alignment */
+.chat-history-item span {
+  display: inline-block;
+  white-space: nowrap;        /* 👈 Keep it single line */
+  overflow: hidden;           /* 👈 Hide overflow */
+  text-overflow: ellipsis;    /* 👈 Add ... when needed */
+  max-width: 90%;             /* 👈 Give more room before cutting off */
+  vertical-align: middle;     /* Optional: aligns text nicely with buttons */
 }
 
 /* ---------- Chat Header (Title & Navbar) ---------- */

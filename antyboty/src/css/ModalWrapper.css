@@ -142,3 +142,113 @@
     }
   }
   
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 per row */
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .modal-card {
+    background-color: #1e1f24;
+    border: 1px solid #3c3f45;
+    border-radius: 10px;
+    padding: 20px 10px;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .modal-card h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #ffffff;
+  }
+  
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    margin-top: 10px;
+  }
+  
+  .modal-card:hover {
+    background-color: #2a2b30;
+  }
+  
+  .modal-card.delete {
+    background-color: #9c2c2c;
+  }
+  
+  .modal-card.delete:hover {
+    background-color: #b63737;
+  }
+  
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 20px;
+  }
+  
+  /* .charts-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+   */
+
+   .charts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  @media (max-width: 768px) {
+    .charts-row {
+      grid-template-columns: 1fr; /* Stack vertically on small screens */
+    }
+  }
+  /* .chart-card {
+    flex: 1 1 48%;
+    max-width: 48%;
+    height: 280px;
+    background-color: #1e1f24;
+    border: 1px solid #3c3f45;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+   */
+   .chart-card {
+    background-color: #1e1f24;
+    border: 1px solid #3c3f45;
+    border-radius: 10px;
+    padding: 15px;
+    flex: 1 1 300px; /* responsive: min 300px */
+    min-width: 280px;
+    max-width: 100%;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+  .chart-card h4 {
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 30px;
+  }
+  

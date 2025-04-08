@@ -11,14 +11,49 @@
   z-index: 1000;
 }
 
-.modal-container {
+/* .modal-container {
   background: #202123;
   color: white;
   padding: 20px;
   border-radius: 10px;
   width: 400px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+} */
+
+/* Extend modal width */
+.modal-container.wide {
+  width: 100%;
+  max-width: 900px;
+  max-height: 95vh;
+  min-height: 80vh;
+  overflow-y: auto;
 }
+
+/* New wrapper for flexible layout */
+/* .modal-wrapper-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 30px;
+  margin-top: 20px;
+  overflow-y: auto;
+  padding-bottom: 30px;
+} */
+
+.modal-wrapper-content {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Previously 500px */
+  gap: 20px; /* Smaller spacing */
+}
+
+
+/* Optional tweak for each section */
+.modal-section {
+  background: #25262b;
+  border: 1px solid #3c3f45;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
 
 .modal-header {
   display: flex;

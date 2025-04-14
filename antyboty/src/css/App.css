@@ -43,6 +43,72 @@ html, body {
   justify-content: center;
   align-items: center;
 }
+/* .toggle-sidebar-btn {
+  background: none;
+  border: none;
+  color: #d1d5db;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.toggle-sidebar-btn:hover {
+  transform: scale(1.1);
+  color: #19c37d;
+} */
+/* .toggle-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background 0.2s ease-in-out;
+}
+/*
+.toggle-button:hover {
+  background-color: rgba(255, 255, 255, 0.1); 
+}*/
+
+/*.toggle-button img {
+  width: 28px;
+  height: 28px;
+} */
+.toggle-sidebar-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-sidebar-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.toggle-sidebar-btn .toggle-icon-img {
+  width: 24px;
+  height: 24px;
+  filter: invert(0.7); /* For dark mode icon clarity */
+  transition: transform 0.2s ease;
+}
+
+.toggle-sidebar-btn:hover .toggle-icon-img {
+  transform: scale(1.1);
+}
+
+/* Add this */
+.chat-container.hide-sidebar .chat-sidebar {
+  display: none;
+}
+
+.chat-container.hide-sidebar .chat-main {
+  width: 100%;
+}
 
 /* ---------- Search Input Styling ---------- */
 .search-input {
@@ -577,13 +643,17 @@ html, body {
   align-self: flex-start;
   background-color: #30323e;
   color: #d1d5db;
-  border-radius: 18px 18px 18px 4px; /* 🔥 More natural rounded shape */
-  /* padding: 10px 14px; */
+  border-radius: 18px 18px 18px 4px;
   padding: 12px 15px;
   border: 1px solid #2d2f33;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 🔥 Adds subtle shadow */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   font-size: 1rem;
+
+  /* ✅ Add these lines */
+  white-space: normal;
+  word-break: break-word;
 }
+
 
 
 /* ---------- Markdown Formatting for Bot Messages ---------- */

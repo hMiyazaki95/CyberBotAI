@@ -31,6 +31,7 @@ html, body {
   background-color: #0d0e11;
   border-right: 2px solid #2d2f33;
   height: 100vh; /* ✅ Ensures full height */
+  transition: width 0.3s ease;
 }
 
 /* ---------- Sidebar Header (Search Bar) ---------- */
@@ -43,47 +44,18 @@ html, body {
   justify-content: center;
   align-items: center;
 }
-/* .toggle-sidebar-btn {
-  background: none;
-  border: none;
-  color: #d1d5db;
-  font-size: 1.2rem;
-  cursor: pointer;
-  margin-right: 0.5rem;
-  transition: transform 0.2s ease;
-}
-
-.toggle-sidebar-btn:hover {
-  transform: scale(1.1);
-  color: #19c37d;
-} */
-/* .toggle-button {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  transition: background 0.2s ease-in-out;
-}
-/*
-.toggle-button:hover {
-  background-color: rgba(255, 255, 255, 0.1); 
-}*/
-
-/*.toggle-button img {
-  width: 28px;
-  height: 28px;
-} */
+/* 🔄 Shared Toggle Button Styles */
 .toggle-sidebar-btn {
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 6px;
   border-radius: 50%;
-  transition: background-color 0.2s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s ease-in-out, transform 0.3s ease;
+  /* transition: transform 0.3s ease, opacity 0.2s ease; */
 }
 
 .toggle-sidebar-btn:hover {
@@ -91,19 +63,34 @@ html, body {
 }
 
 .toggle-sidebar-btn .toggle-icon-img {
-  width: 24px;
-  height: 24px;
-  filter: invert(0.7); /* For dark mode icon clarity */
-  transition: transform 0.2s ease;
+  width: 22px;
+  height: 22px;
+  filter: invert(0.7);
+  transition: transform 0.3s ease;
 }
 
-.toggle-sidebar-btn:hover .toggle-icon-img {
-  transform: scale(1.1);
+.toggle-sidebar-btn.rotated .toggle-icon-img {
+  transform: rotate(180deg);
+}
+
+/* 🔧 Adjust layout */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-title2 .title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Add this */
 .chat-container.hide-sidebar .chat-sidebar {
   display: none;
+  width: 0;
+  overflow: hidden;
 }
 
 .chat-container.hide-sidebar .chat-main {
@@ -174,6 +161,8 @@ html, body {
   max-height: calc(100vh - 50px);
   padding-left: 0.5rem; /* ✅ Adds space on the left side */
   padding-right: 0.5rem; /* ✅ Adds space on the right side */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 
@@ -188,7 +177,28 @@ html, body {
   /* flex-direction: column;
   gap: 0.5rem;
 } */
+/* 🌐 Modern Scrollbar Styles for .chat-history (Sidebar) */
+.chat-history::-webkit-scrollbar {
+  width: 10px;
+}
 
+.chat-history::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  transition: background-color 0.3s ease;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
 /* 🔹 Chat History Item */
 .chat-history-item {
   display: flex;
@@ -362,6 +372,7 @@ html, body {
   position: relative;
   overflow: hidden;
   min-width: 0; /* 🚀 Prevents it from forcing the sidebar to shrink */
+  transition: width 0.3s ease;
 }
 
 /* 🔹 Ensure spacing and alignment */
@@ -393,6 +404,13 @@ html, body {
   font-size: 1.2rem;
   font-weight: bold;
   color: #ffffff;
+}
+
+.sidebar-title2 .title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem; /* Spacing between toggle and title */
+  margin-left: 0.5rem; /* Push title slightly right */
 }
 
 
@@ -521,19 +539,99 @@ html, body {
   /* word-wrap: break-word;
   max-width: 100%;
 } */
+/* 🌐 Modern Scrollbar Styles for WebKit Browsers (Chrome, Safari, Edge) */
+.chat-messages::-webkit-scrollbar {
+  width: 10px;
+}
 
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent; /* Makes track invisible */
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2); /* Light transparent thumb */
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.3s ease;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4); /* Brighter on hover */
+}
+
+/* Firefox scrollbar (modern look) */
 .chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* ⬅️ Make sure the scrollbar stays flush-right to edge */
+.chat-messages {
+  padding-right: 5px; /* small gap so text doesn't bump against scrollbar */
+}
+
+/* .chat-messages {
   flex-grow: 1;
   padding: 1rem 1.5rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* 🔥 More natural spacing between messages */
+  gap: 0.5rem; 
   max-width: 100%;
   word-wrap: break-word;
   overflow-wrap: break-word;
   scroll-behavior: smooth;
+
+  max-width: 720px;
+  margin: 0 auto;
+
+} */
+/* 💬 Wrapper keeps scrollbar full width */
+.chat-messages-wrapper {
+  flex-grow: 1;
+  overflow-y: auto;
+  position: relative;
 }
+
+/* 💬 Actual message container is centered inside */
+.chat-messages {
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 720px;
+  margin: 0 auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  scroll-behavior: smooth;
+}
+.chat-messages-wrapper::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-messages-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.chat-messages-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.chat-messages-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
 
 /* ---------- Chat Footer ---------- */
 .chat-footer-container { 
@@ -621,6 +719,7 @@ html, body {
 /* ---------- User Messages (Right Aligned) ---------- */
 
 .message.user {
+  align-self: flex-start;
   width: -moz-fit-content; /* 🔥 Fix for Firefox */
   width: fit-content; /* ✅ Works in Chrome, Edge, Safari */
   max-width: 75%;
@@ -633,10 +732,13 @@ html, body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 🔥 Adds depth */
   border: 1px solid #3c3f45;
   font-size: 1rem;
+
+  margin-right: 30px;
 }
 
 /* ---------- Bot Messages (Left Aligned) ---------- */
 .message.bot {
+  align-self: flex-start;
   width: -moz-fit-content;
   width: fit-content;
   max-width: 85%;
@@ -652,6 +754,7 @@ html, body {
   /* ✅ Add these lines */
   white-space: normal;
   word-break: break-word;
+  margin-left: 42px;
 }
 
 
@@ -711,12 +814,26 @@ html, body {
 
 /* ---------- Responsive Design ---------- */
 @media (max-width: 768px) {
-  .chat-sidebar {
+  /* .chat-container.hide-sidebar .chat-sidebar {
     display: none;
+  } */
+  .chat-sidebar {
+    position: absolute;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    background-color: #0d0e11;
+    transition: transform 0.3s ease;
+    transform: translateX(0);
   }
 
+  .chat-container.hide-sidebar .chat-sidebar {
+    transform: translateX(-100%);
+  }
   .chat-main {
     width: 100%;
+    overflow-y: auto;
   }
 
   .chat-footer-box {
@@ -727,5 +844,7 @@ html, body {
   .chat-input button {
     font-size: 0.9rem;
   }
+  
 }
+
 

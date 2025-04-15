@@ -1648,6 +1648,18 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   
+  useEffect(() => {
+    const handleClickOutsideDropdown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".navbar-user") && !target.closest(".dropdown-menu")) {
+        setDropdownVisible(false);
+      }
+    };
+  
+    document.addEventListener("mousedown", handleClickOutsideDropdown);
+    return () => document.removeEventListener("mousedown", handleClickOutsideDropdown);
+  }, []);
+  
   const startNewChat = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
@@ -2167,8 +2179,20 @@ function App() {
           }));
           console.log("🧠 Processed chat sessions:", chatSessions);
         //2
+        const cleanedChats = chatSessions.filter(chat => 
+          !(chat.chat_name === "New Chat" && chat.messages.length === 0)
+        );
+        // setChatHistory(chatSessions.reverse());
+        setChatHistory(cleanedChats.reverse());
 
-        setChatHistory(chatSessions.reverse());
+        if (
+          activeChatId &&
+          !cleanedChats.find(chat => chat.id === activeChatId)
+        ) {
+          setActiveChatId(null);
+          setMessages([]);
+          localStorage.removeItem("activeChatId");
+        }        
 
   
         // ✅ Restore last active chat from localStorage if available
@@ -2275,6 +2299,16 @@ function App() {
             placeholder="Search Your Chat History..."
             className="search-input"
           />*/}
+          {sidebarVisible && (
+            <button
+              aria-label="Toggle Sidebar"
+              className={`toggle-sidebar-btn ${sidebarVisible ? "rotated" : ""}`}
+              onClick={() => setSidebarVisible(false)}
+              title="Hide Sidebar"
+            >
+              <img className="toggle-icon-img" src="./src/assets/icons/toggle-icon.svg" alt="Toggle Sidebar" />
+            </button>
+          )}
           <input
             type="text"
             placeholder="Search Your Chat History..."
@@ -2387,14 +2421,19 @@ function App() {
       {/* Main Chat Area */}
       <div className="chat-main">
         <div className="sidebar-title2">
+        <div className="title-area">
+          {!sidebarVisible && (
+            <button
+              className={`toggle-sidebar-btn ${!sidebarVisible ? "rotated" : ""}`}
+              onClick={() => setSidebarVisible(true)}
+              title="Show Sidebar"
+            >
+              <img className="toggle-icon-img" src="./src/assets/icons/toggle-icon.svg" alt="Toggle Sidebar" />
+            </button>
+          )}
           <div className="title">CYBERBOT</div>
-          <button
-            className="toggle-sidebar-btn"
-            onClick={() => setSidebarVisible((prev) => !prev)}
-            title="Toggle Sidebar"
-          >
-            <img className="toggle-icon-img" src="./src/assets/icons/toggle-icon.svg" alt="Toggle Sidebar" />
-          </button>
+        </div>
+
 
 
           {/* LLM Model Dropdown */}
@@ -2463,32 +2502,34 @@ function App() {
         </div>
 
         {/* Chat Messages */}
-        <div className="chat-messages">
-          {/* {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.sender}`}>
+        <div className="chat-messages-wrapper">
+          <div className="chat-messages">
+            {/* {messages.map((msg, index) => (
+              <div key={index} className={`message ${msg.sender}`}>
+                {msg.sender === "bot" ? (
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                ) : (
+                  msg.text
+                )}
+              </div>
+            ))} */}
+            {messages.map((msg: Message) => (
+              <div key={`${msg.timestamp}-${msg.text}`} className={`message ${msg.sender}`}>
               {msg.sender === "bot" ? (
                 <ReactMarkdown>{msg.text}</ReactMarkdown>
               ) : (
                 msg.text
               )}
-            </div>
-          ))} */}
-          {messages.map((msg: Message) => (
-            <div key={`${msg.timestamp}-${msg.text}`} className={`message ${msg.sender}`}>
-            {msg.sender === "bot" ? (
-              <ReactMarkdown>{msg.text}</ReactMarkdown>
-            ) : (
-              msg.text
+              </div>
+            ))}
+            {botTyping && (
+              <div className="message bot typing-indicator">
+                <em>CyberBot is typing...</em>
+              </div>
             )}
-            </div>
-          ))}
-          {botTyping && (
-            <div className="message bot typing-indicator">
-              <em>CyberBot is typing...</em>
-            </div>
-          )}
 
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Chat Footer */}

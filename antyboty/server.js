@@ -1977,7 +1977,7 @@ import mongoose from "mongoose";
 import ChatHistory from "./src/models/ChatHistory.js"; // Import the model
 import crypto from "crypto";
 import { pipeline } from "@xenova/transformers"; // 🧠 Use this instead of huggingface's Python API
-
+import Stripe from "stripe";
 
 
 dotenv.config({ path: "./.env" });
@@ -1988,6 +1988,11 @@ const app = express();
 const port = process.env.PORT || 5001;
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"; // ⚠️ Use a strong secret in .env
 
+
+// ✅ Subscription setup with Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2022-11-15",
+});
 
 
 // ✅ MongoDB Connection (AFTER loading env variables)
@@ -2593,6 +2598,23 @@ app.get("/api/test-delete-chat", (req, res) => {
   res.send("✅ Delete route is reachable!");
 });
 
+/**
+ * ✅ Subscription
+ */
+
+app.get("/api/subscription-status", authenticateToken, async (req, res) => {
+  // request to access the user table and access the usrId then store into the variable called userId
+  const userId = req.user.userId;
+
+  try {
+    const result = await pool.query("SELECT is_subscribed FROM users WHERE id = $1", [userId]);
+    const isSubscribed = result.rows[0]?.is_subscribed || false;
+    res.json({ isSubscribed });
+  } catch (err) {
+    console.error("❌ Error fetching subscription status:", err);
+    res.status(500).json({ error: "Unable to fetch subscription status" });
+  }
+});
 
 
 /**
@@ -2649,6 +2671,46 @@ let secureBertPipeline;
   secureBertPipeline = await pipeline("fill-mask", "Xenova/bert-base-uncased"); // temporary placeholder
   console.log("✅ Hugging Face SecureBERT pipeline loaded");
 })();
+
+
+/**
+ * ✅ Subscription: check out session route
+ */
+app.post("/api/create-checkout-session", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "subscription",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: 1000, // $10/month
+            product_data: {
+              name: "CyberBot Monthly Subscription",
+            },
+            recurring: {
+              interval: "month",
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `http://localhost:3000/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:3000`,
+      metadata: {
+        userId: userId,
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("❌ Stripe session error:", err);
+    res.status(500).json({ error: "Failed to create checkout session" });
+  }
+});
 
 
 

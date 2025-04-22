@@ -1543,7 +1543,7 @@ import AIPreferencesPage from "./pages/AIPreferencePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
 import SettingsModal from "../src/components/SettingsModel"; // ✅ Import new modal
-
+import SubscriptionModal from "../src/components/SubscriptionModal"; // ✅ Import new modal
 
 type Message = { 
   text: string; 
@@ -1888,6 +1888,18 @@ function App() {
     ]);
     return;
   }
+
+  const chatCount = parseInt(localStorage.getItem("chatCount") || "0", 10);
+  const isSubscribed = localStorage.getItem("isSubscribed") === "true";
+
+  // for testing pupose but make it around 10 or 20
+  if (!isSubscribed && chatCount >= 2) {
+    setModalPage("subscription-modal"); // Show the pricing popup
+    return; // Block sending further messages
+  }
+
+  localStorage.setItem("chatCount", (chatCount + 1).toString());
+
 
   const userMessage: Message = { text: value, sender: "user" };
   setValue(""); // ✅ Clear input immediately after capturing the value
@@ -2282,6 +2294,24 @@ function App() {
     if (stored) setArchivedChats(JSON.parse(stored));
   }, []);
   
+  useEffect(() => {
+    const fetchSubscriptionStatus = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+  
+      try {
+        const res = await axios.get("http://localhost:5001/api/subscription-status", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        localStorage.setItem("isSubscribed", res.data.isSubscribed.toString());
+      } catch (err) {
+        console.error("❌ Failed to fetch subscription status", err);
+      }
+    };
+  
+    fetchSubscriptionStatus();
+  }, []);
   
 
 
@@ -2573,6 +2603,7 @@ function App() {
       {modalPage === "ai-preferences" && <AIPreferencesPage onClose={() => setModalPage(null)} />}
       {modalPage === "privacy" && <PrivacyPage onClose={() => setModalPage(null)} />}
       {modalPage === "help" && <HelpPage onClose={() => setModalPage(null)} />}
+      {modalPage === "subscription-modal" && <SubscriptionModal onClose={() => setModalPage(null)} />}
 
     </div>
   );

@@ -1630,6 +1630,7 @@ function App() {
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
+      console.warn("⚠️ userId missing. Possibly due to cleared localStorage.");
       alert("You must be logged in.");
       navigate("/login");
     }
@@ -1666,6 +1667,15 @@ function App() {
       alert("User ID missing.");
       return;
     }
+      // Check if there's already an empty "New Chat" in history
+    const hasEmptyNewChat = chatHistory.some(chat =>
+      chat.chat_name === "New Chat" && chat.messages.length === 0
+    );
+
+    if (hasEmptyNewChat) {
+      console.warn("⚠️ You already have an unused 'New Chat'.");
+      return; // Prevent adding another one
+    }
   
     const newChatId = `chat_${userId}_${Date.now()}`;
     const newChat: ChatSession = {
@@ -1679,17 +1689,17 @@ function App() {
     setMessages([]);
     localStorage.setItem("activeChatId", newChatId.toString());
   
-    try {
-      await axios.post("http://localhost:5001/api/save-chat-history", {
-        userId,
-        chatId: newChatId,
-        chatName: "New Chat",
-        messages: [], // empty at creation
-      });
-      console.log("✅ New chat saved to DB");
-    } catch (error) {
-      console.error("❌ Failed to save new chat to DB:", error);
-    }
+    // try {
+    //   await axios.post("http://localhost:5001/api/save-chat-history", {
+    //     userId,
+    //     chatId: newChatId,
+    //     chatName: "New Chat",
+    //     messages: [], // empty at creation
+    //   });
+    //   console.log("✅ New chat saved to DB");
+    // } catch (error) {
+    //   console.error("❌ Failed to save new chat to DB:", error);
+    // }
   };
   
 
@@ -1893,7 +1903,7 @@ function App() {
   const isSubscribed = localStorage.getItem("isSubscribed") === "true";
 
   // for testing pupose but make it around 10 or 20
-  if (!isSubscribed && chatCount >= 2) {
+  if (!isSubscribed && chatCount >= 5) {
     setModalPage("subscription-modal"); // Show the pricing popup
     return; // Block sending further messages
   }
@@ -1928,6 +1938,22 @@ function App() {
       )
     );
   }
+
+  const isNewChat = !chatHistory.find(chat => chat.id === currentChatId);
+  if (isNewChat) {
+    try {
+      await axios.post("http://localhost:5001/api/save-chat-history", {
+        userId,
+        chatId: currentChatId,
+        chatName: "New Chat",
+        messages: [userMessage], // save only the first message
+      });
+      console.log("✅ Chat saved to DB on first message.");
+    } catch (error) {
+      console.error("❌ Failed to save chat on first message:", error);
+    }
+  }
+
 
   const aiPersonality = localStorage.getItem("aiPersonality") || "Friendly";
   const personalityPrompt = getPersonalityPrompt(aiPersonality);
@@ -2061,6 +2087,229 @@ function App() {
 
   setValue(""); // ✅ Clear input
 };
+
+
+
+// const handleSubmit = async () => {
+//   if (!value.trim()) return;
+
+//   const userId = localStorage.getItem("userId");
+//   if (!userId) {
+//     console.error("❌ Error: userId is missing!");
+//     setMessages((prev) => [
+//       ...prev,
+//       { text: "⚠️ Error: User not authenticated.", sender: "bot" },
+//     ]);
+//     return;
+//   }
+
+//   const chatCount = parseInt(localStorage.getItem("chatCount") || "0", 10);
+//   const isSubscribed = localStorage.getItem("isSubscribed") === "true";
+
+//   if (!isSubscribed && chatCount >= 12) {
+//     setModalPage("subscription-modal");
+//     return;
+//   }
+
+//   localStorage.setItem("chatCount", (chatCount + 1).toString());
+
+//   const userMessage: Message = { text: value, sender: "user" };
+//   setValue("");
+
+//   let currentChatId = activeChatId;
+
+//   // 🔥 Fix: Find an existing blank "New Chat" if exists
+//   if (!currentChatId) {
+//     const existingNewChat = chatHistory.find(chat =>
+//       chat.chat_name === "New Chat" && chat.messages.length === 0
+//     );
+
+//     if (existingNewChat) {
+//       console.log("♻️ Using existing blank 'New Chat' with ID:", existingNewChat.id);
+//       currentChatId = existingNewChat.id;
+//       setActiveChatId(existingNewChat.id);
+//       setMessages([userMessage]);
+//       localStorage.setItem("activeChatId", existingNewChat.id.toString());
+//     } else {
+//       console.log("🆕 Creating a brand new chat");
+//       currentChatId = `chat_${userId}_${Date.now()}`;
+//       const newChat: ChatSession = {
+//         id: currentChatId,
+//         chat_name: "New Chat",
+//         messages: [userMessage],
+//       };
+//       setChatHistory((prev) => [...prev, newChat]);
+//       setActiveChatId(currentChatId);
+//       setMessages([userMessage]);
+//       localStorage.setItem("activeChatId", currentChatId.toString());
+//     }
+//   } else {
+//     setMessages((prev) => [...prev, userMessage]);
+//     setChatHistory((prev) =>
+//       prev.map((chat) =>
+//         chat.id === currentChatId
+//           ? { ...chat, messages: [...chat.messages, userMessage] }
+//           : chat
+//       )
+//     );
+//   }
+
+//   const isNewChat = !chatHistory.find(chat => chat.id === currentChatId);
+//   if (isNewChat) {
+//     try {
+//       await axios.post("http://localhost:5001/api/save-chat-history", {
+//         userId,
+//         chatId: currentChatId,
+//         chatName: "New Chat",
+//         messages: [userMessage], // save only the first message
+//       });
+//       console.log("✅ Chat saved to DB on first message.");
+//     } catch (error) {
+//       console.error("❌ Failed to save chat on first message:", error);
+//     }
+//   }
+
+
+//   const aiPersonality = localStorage.getItem("aiPersonality") || "Friendly";
+//   const personalityPrompt = getPersonalityPrompt(aiPersonality);
+//   const prompt = `${personalityPrompt}\n\nUser: ${value}\nAI: If the user's question is not related to cybersecurity, respond with: "I specialize in cybersecurity topics! Please ask me something related to online safety, ethical hacking, or privacy." Otherwise, answer the question.`;
+
+//   try {
+//     setBotTyping(true);
+//     const res = await axios.post("http://localhost:5001/api/chat", {
+//       prompt,
+//       question: value,
+//       model,
+//       userId,
+//       chatId: currentChatId,
+//     });
+//     setBotTyping(false);
+
+//     const botMessage: Message = {
+//       text: res.data?.response || "⚠️ Error: No response received",
+//       sender: "bot",
+//     };
+
+//     setMessages((prev) => [...prev, botMessage]);
+//     setChatHistory((prev) =>
+//       prev.map((chat) =>
+//         chat.id === currentChatId
+//           ? { ...chat, messages: [...chat.messages, botMessage] }
+//           : chat
+//       )
+//     );
+
+//     try {
+//       //2
+//       // await axios.post("http://localhost:5001/api/save-chat-history", {
+//       //   userId,
+//       //   chatId: currentChatId,
+//       //   chatName: "User Chat",
+//       //   messages: [
+//       //     { text: value, sender: "user", timestamp: new Date() },
+//       //     { text: botMessage.text, sender: "bot", timestamp: new Date() },
+//       //   ],
+//       // });
+//       const saveRes = await axios.post("http://localhost:5001/api/save-chat-history", {
+//         userId,
+//         chatId: currentChatId,
+//         chatName: "New Chat",
+//         messages: [
+//           { text: value, sender: "user", timestamp: new Date() },
+//           { text: botMessage.text, sender: "bot", timestamp: new Date() },
+//         ],
+//       });
+      
+//       const backendChatName = saveRes.data.chat_name;
+//       console.log("✅ Chat history saved successfully.");
+//       setChatHistory((prev) =>
+//         prev.map((chat) =>
+//           chat.id === currentChatId
+//             ? { ...chat, chat_name: backendChatName }
+//             : chat
+//         )
+//       );
+      
+//     } catch (error) {
+//       if (axios.isAxiosError(error)) {
+//         console.error("❌ Error saving chat history:", error.response?.data || error.message);
+//       } else {
+//         console.error("❌ Unexpected error:", error);
+//       }
+//     }
+
+//     const summary = await summarizeResponse(botMessage.text, value);
+//     if (!summary) {
+//       console.warn("⚠️ Skipping chat name update due to missing summary.");
+//       return;
+//     }
+//     console.log("🧠 Summary from summarizeResponse:", summary);
+    
+
+    
+//     //2
+//     // setChatHistory((prev) =>
+//     //   prev.map((chat) =>
+//     //     chat.id === currentChatId
+//     //       ? { ...chat, chat_name: summary || "New Chat" }
+//     //       : chat
+//     //   )
+//     // );
+    
+    
+
+//     try {
+//       await axios.post("http://localhost:5001/api/update-chat-name", {
+//         userId,
+//         chatId: currentChatId,
+//         newName: summary, // at the update chat name chat history name should be summarized name
+//       });
+//       console.log("✅ Chat name updated successfully.");
+
+
+//       await fetchChatHistory();
+//     } catch (error) {
+//       if (axios.isAxiosError(error)) {
+//         console.error("❌ Error updating chat name:", error.response?.data || error.message);
+//       } else {
+//         console.error("❌ Unexpected error:", error);
+//       }
+//     }
+
+//   } catch (error) {
+//     let message = "⚠️ Error: Could not get a response.";
+//     if (axios.isAxiosError(error)) {
+//       console.error("❌ Axios error:", error.response?.data || error.message);
+//       message = `⚠️ Axios Error: ${error.response?.data?.message || error.message}`;
+//     } else {
+//       console.error("❌ Unexpected error:", error);
+//     }
+  
+//     const errorMessage: Message = {
+//       text: message,
+//       sender: "bot",
+//     };
+  
+//     setMessages((prev) => [...prev, errorMessage]);
+//     setChatHistory((prev) =>
+//       prev.map((chat) =>
+//         chat.id === currentChatId
+//           ? { ...chat, messages: [...chat.messages, errorMessage] }
+//           : chat
+//       )
+//     );
+//   }  
+
+//   setValue(""); // ✅ Clear input
+// };
+
+
+
+
+
+
+
+
 
 
 
@@ -2226,7 +2475,15 @@ function App() {
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
   const handleLogout = () => {
+    // Clear auth info
     localStorage.removeItem("userId"); // ✅ Remove user login info
+    localStorage.removeItem("token"); // ✅ Must clear this!
+
+    // Clear chat session info
+    localStorage.removeItem("activeChatId");
+    localStorage.removeItem("chatCount");
+    localStorage.removeItem("archivedChats");
+    
     setChatHistory([]); // ✅ Reset UI state, but keep DB history
     setActiveChatId(null);
     setShowLogoutPopup(true); // ✅ Show a message

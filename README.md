@@ -3,7 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/hMiyazaki95/AntyBoty/main.yml?branch=main)]()
 
-I created this project to make my chatbot better and expand my community group in AI etc. The purpose of making this open source is to make my chatbot better. Also, this is a Cybersecurity QHN Bot.
+AntyBoty is an AI-powered cybersecurity chatbot designed to help users learn and practice safe online behaviors. Unlike generic bots, it focuses on answering security-related questions with trusted knowledge and structured explanations.
 
 ## Table of Contents
 
@@ -23,11 +23,15 @@ I created this project to make my chatbot better and expand my community group i
 
 <!-- TODO: Add screenshots if applicable -->
 
-## Features
-
-- Chatbot functionality.
-- Likely utilizes AI for enhanced conversation and cybersecurity questions.
-- Web server integration based on file structure.
+## ✨ Features
+- 💬 Real-time chatbot with AI-powered responses  
+- 🔐 Secure chat history (MongoDB + PostgreSQL with encryption)  
+- 🕵️ Searchable chat history for quick information retrieval  
+- 🤖 LLM model selection option (choose between different AI models at runtime)  
+- ⚡ Fast backend built on Node.js + TypeScript  
+- 📊 Subscription model with free-tier limits (Stripe integration ready)  
+- 🌐 REST API for third-party integrations  
+- 📱 Responsive web UI built with React + Tailwind CSS
 
 ## Tech Stack
 

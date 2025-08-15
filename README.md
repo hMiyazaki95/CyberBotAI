@@ -141,4 +141,4 @@ I'd like to thank all the contributors and supporters of this project.
 
 ## Contact
 
-Hajime Miyazaki - [https://github.com/hMiyazaki95/AntyBoty](https://github.com/hMiyazaki95/AntyBoty) - <!-- TODO: add contact email -->
+Hajime Miyazaki - [hmiyazakiemail6@gmail.com](hmiyazakiemail6@gmail.com) - <!-- TODO: add contact email -->

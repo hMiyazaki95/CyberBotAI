@@ -3,8 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/hMiyazaki95/AntyBoty/main.yml?branch=main)]()
 
-
-I created this project to make my chatbot better and expand my community group in AI etc. The purpose of making this open source is to make my chatbot better.
+I created this project to make my chatbot better and expand my community group in AI etc. The purpose of making this open source is to make my chatbot better. Also, this is a Cybersecurity QHN Bot.
 
 ## Table of Contents
 
@@ -27,7 +26,7 @@ I created this project to make my chatbot better and expand my community group i
 ## Features
 
 - Chatbot functionality.
-- Likely utilizes AI for enhanced conversation.
+- Likely utilizes AI for enhanced conversation and cybersecurity questions.
 - Web server integration based on file structure.
 
 ## Tech Stack
@@ -54,8 +53,8 @@ I created this project to make my chatbot better and expand my community group i
 
 - Node.js (check `package.json` in `antyboty/` for specific version if available)
 - npm or yarn
-- MongoDB
-- Postgres
+- MongoDB (database requirement)
+- Postgres (database requirement)
 
 ## Installation
 
@@ -86,7 +85,7 @@ I created this project to make my chatbot better and expand my community group i
 
 ## Configuration
 
-Configure the project by editing the `.env` file (if it exists or create one) in the `antyboty` directory and setting the required environment variables. For example:
+Configure the project by editing the `.env` file in the `antyboty` directory and setting the required environment variables. For example:
 
 ```
 API_KEY=your_api_key

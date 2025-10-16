@@ -13,6 +13,15 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+# Python Virtual Environment
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Build & Output
 dist/
 dist-ssr/
@@ -62,3 +71,21 @@ Note.txt
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Claude Code (AI Assistant)
+# Exclude Claude Code session data and artifacts
+.claude/
+.claudecode/
+claude-code-session/
+.anthropic/
+anthropic-cache/
+
+# Claude Code generated files (optional - uncomment if you want to exclude documentation)
+# ADMIN_SETUP.md
+# BOT_RESPONSE_FIX.md
+# CHAT_NAMING_FIX.md
+# DATABASE_FIX.md
+# OLLAMA_CONFIG.md
+# QUICK_START.md
+# STREAMING_FIX.md
+# SUPER_ADMIN_SETUP.md

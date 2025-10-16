@@ -1,0 +1,583 @@
+/* General Reset */
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #0a0e27;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Landing Page */
+.landing-container {
+  position: relative;
+  text-align: center;
+  color: #fff;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1729 100%);
+  overflow: hidden;
+}
+
+/* Cyber Grid Background */
+.cyber-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+  z-index: 0;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+/* Matrix Rain Effect */
+.matrix-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 255, 255, 0.03) 50%, transparent 100%);
+  animation: matrixFall 10s linear infinite;
+  z-index: 0;
+  opacity: 0.3;
+}
+
+@keyframes matrixFall {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100vh; }
+}
+
+/* Earth and ThunderBird Section */
+.earth-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  z-index: -1; /* Ensures background elements are behind the main content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  perspective: 1000px; /* Adding perspective for 3D effect */
+}
+
+/* Earth Core */
+.earth {
+  position: relative;
+  animation: rotateEarth 30s infinite linear; /* Earth rotation */
+}
+
+.earth-core {
+  width: 500px; /* Adjust size to match your desired design */
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #0077ff, #006bb3);
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+/* Orbit Path (Thunderbird Orbit) */
+.orbit-path {
+  position: absolute;
+  width: 600px; /* Orbit size adjusted to be large enough to surround the Earth */
+  height: 600px; /* Keep orbit circular */
+  border: 2px dashed yellow;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Center the orbit around the Earth */
+  z-index: 0; /* Ensure orbit stays behind the Thunderbird */
+}
+
+/* Thunderbird Animation */
+/* .thunderbird {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  background-color: yellow;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  animation: thunderbirdOrbit 10s infinite ease-in-out; /* Animation */
+  /*transform-origin: center; /* Ensure Thunderbird orbits around the center */
+  /*transition: z-index 0.1s, opacity 0.1s ease-in-out; /* Smooth transition for z-index and opacity */
+/*} */
+/* Thunderbird Wrapper */
+.thunderbird {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px; /* Adjust size */
+  height: 100px; /* Adjust size */
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3;
+  animation: thunderbirdOrbit 10s infinite ease-in-out;
+  transform-origin: center;
+}
+
+/* Thunderbird Body (Triangle-like head and body) */
+.thunderbird::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 25px solid transparent;
+  border-right: 25px solid transparent;
+  border-bottom: 50px solid #fcd303;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  transform: rotate(45deg);
+}
+
+/* Thunderbird Left Wing */
+.thunderbird .left-wing {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background-color: #fcd303;
+  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+  top: 15%;
+  left: -15%;
+  transform: rotate(-45deg);
+  z-index: 1;
+}
+
+/* Thunderbird Right Wing */
+.thunderbird .right-wing {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background-color: #fcd303;
+  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+  top: 15%;
+  right: -15%;
+  transform: rotate(45deg);
+  z-index: 1;
+}
+
+/* Thunderbird Lightning Bolt (Tail) */
+.thunderbird .lightning {
+  position: absolute;
+  bottom: -40%;
+  left: 50%;
+  width: 10px;
+  height: 50px;
+  background-color: #fcd303;
+  transform: translateX(-50%) rotate(45deg);
+  z-index: 0;
+}
+
+/* Keyframes for Thunderbird Orbit Animation */
+@keyframes thunderbirdOrbit {
+  0% {
+    left: 0%;
+    z-index: 3; /* Thunderbird in front */
+    opacity: 1; /* Fully visible at the start */
+    transform: translate(0%, -50%) scale(0.5); /* Starting position */
+  }
+  25% {
+    transform: translate(-100%, -50%) scale(0.3); /* Orbit to the side */
+    z-index: 2; /* Thunderbird slightly behind */
+    opacity: 0; /* Keep it visible */
+  }
+  50% {
+    left: 100%;
+    z-index: 1; /* Push Thunderbird behind the Earth */
+    opacity: 1; /* Hide Thunderbird when it moves behind Earth */
+    transform: translate(0%, -50%) scale(1); /* Orbit behind the Earth */
+  }
+  75% {
+    transform: translate(0%, -50%) scale(1); /* Orbit to the other side */
+    z-index: 2; /* Bring Thunderbird slightly behind */
+    opacity: 1; /* Make it visible again */
+  }
+  100% {
+    left: 0%;
+    transform: translate(0%, -50%) scale(0.52); /* Return to starting position */
+    z-index: 3; /* Thunderbird in front */
+    opacity: 1; /* Fully visible at the front */
+  }
+}
+
+
+
+
+/* Thunderbird Animation */
+
+/* Shooting Star Animation */
+.shooting-star {
+  position: absolute;
+  top: 15%;
+  left: 10%;
+  width: 20px;
+  height: 2px;
+  background: white;
+  animation: shootStar 1s infinite linear;
+  opacity: 0;
+}
+
+.shooting-star:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 20px;
+  height: 2px;
+  background: white;
+  animation: shootStar 1s infinite linear;
+  opacity: 0;
+}
+
+/* Landing Content */
+.landing-content {
+  z-index: 1;
+  text-align: center;
+  max-width: 1200px;
+  padding: 2rem;
+}
+
+/* Robot Section */
+.robot-section {
+  position: relative;
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Speech Bubble */
+.speech-bubble {
+  position: relative;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  border-radius: 20px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  min-width: 300px;
+  max-width: 500px;
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+}
+
+.speech-bubble p {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.speech-arrow {
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-top: 15px solid #0099cc;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Robot Avatar */
+.robot-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: robotBounce 2s ease-in-out infinite;
+}
+
+@keyframes robotBounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Robot Head */
+.robot-head {
+  position: relative;
+  width: 100px;
+  height: 90px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  margin-bottom: 5px;
+}
+
+.robot-antenna {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 20px;
+  background: #667eea;
+}
+
+.robot-antenna::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  background: #00d4ff;
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Robot Eyes */
+.robot-eyes {
+  display: flex;
+  justify-content: space-around;
+  padding: 20px 15px 0;
+}
+
+.eye {
+  width: 25px;
+  height: 25px;
+  background: #00d4ff;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.8);
+  animation: eyePulse 2s ease-in-out infinite;
+}
+
+@keyframes eyePulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.8); }
+  50% { box-shadow: 0 0 25px rgba(0, 212, 255, 1); }
+}
+
+/* Robot Mouth */
+.robot-mouth {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 8px;
+  background: #00d4ff;
+  border-radius: 4px;
+}
+
+/* Robot Body */
+.robot-body {
+  width: 80px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.body-light {
+  width: 8px;
+  height: 8px;
+  background: #00d4ff;
+  border-radius: 50%;
+  animation: lightBlink 1s ease-in-out infinite;
+}
+
+.body-light:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.body-light:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes lightBlink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Logo */
+.logo img {
+  width: 120px;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 0 20px rgba(15, 164, 127, 0.5));
+}
+
+/* Text */
+.text h2 {
+  margin: 10px 0 !important;
+  font-size: 3rem !important;
+  background: linear-gradient(135deg, #00d4ff 0%, #0FA47F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.text h3 {
+  margin: 10px 0 20px;
+  font-size: 1.5rem;
+  color: #a0aec0;
+  font-weight: 400;
+}
+
+.text .subtitle {
+  color: #00d4ff;
+  font-size: 1rem;
+  margin-top: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Features Row */
+.features-row {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin: 2.5rem 0;
+  flex-wrap: wrap;
+}
+
+.feature-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.icon-circle:hover {
+  transform: translateY(-5px) scale(1.1);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+}
+
+.feature-icon span {
+  color: #a0aec0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Button Group */
+.button-group {
+  margin-top: 2.5rem;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  border: none;
+  padding: 15px 40px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0FA47F 0%, #0c8a6b 100%);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(15, 164, 127, 0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #00d4ff;
+  border: 2px solid #00d4ff;
+}
+
+.btn-secondary:hover {
+  background: #00d4ff;
+  color: #0a0e27;
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(0, 212, 255, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .text h2 {
+    font-size: 2rem !important;
+  }
+
+  .text h3 {
+    font-size: 1.2rem;
+  }
+
+  .features-row {
+    gap: 2rem;
+  }
+
+  .speech-bubble {
+    min-width: 250px;
+    padding: 1rem 1.5rem;
+  }
+
+  .speech-bubble p {
+    font-size: 1rem;
+  }
+}
+
+/* Keyframes for Earth Rotation */
+@keyframes rotateEarth {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg); /* Continuous rotation of the Earth */
+  }
+}

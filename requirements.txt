@@ -1,0 +1,33 @@
+# Flask Backend Dependencies for CyberBot AI
+# Python 3.8+ required
+
+# Core Framework
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Authentication & Security
+PyJWT==2.8.0
+bcrypt==4.1.2
+cryptography==41.0.7
+python-dotenv==1.0.0
+
+# Database Drivers
+pymongo==4.6.1
+psycopg2-binary==2.9.9
+
+# AI/ML Libraries
+openai==1.6.1
+
+# Optional: HuggingFace Transformers for SecureBERT and GLM-4.6
+# Uncomment to enable local AI model support
+# WARNING: GLM-4.6 is a 357B parameter model - requires significant hardware
+# transformers==4.47.1
+# torch==2.1.2
+# accelerate==1.2.1  # For efficient model loading
+# sentencepiece==0.2.0  # For tokenization
+
+# Optional: Payment Processing (Stripe)
+stripe==7.9.0
+
+# Production Server
+gunicorn==21.2.0

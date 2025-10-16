@@ -53,8 +53,12 @@ export default function LoginPage() {
       if (response.ok) {
         localStorage.setItem("token", data.token); // ✅ Store token
         localStorage.setItem("userId", data.userId); // ✅ Store userId
+        localStorage.setItem("isSubscribed", data.isSubscribed ? "true" : "false"); // ✅ Store subscription status
+        localStorage.setItem("isAdmin", data.isAdmin ? "true" : "false"); // ✅ Store admin status
+        localStorage.setItem("isSuperAdmin", data.isSuperAdmin ? "true" : "false"); // ✅ Store super admin status
+        localStorage.setItem("userRole", data.role || "user"); // ✅ Store user role
         setShowSuccessPopup(true); // ✅ Show popup
-        
+
         setTimeout(() => {
           setShowSuccessPopup(false);
           navigate("/chat"); // ✅ Redirect to chat

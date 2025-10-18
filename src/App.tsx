@@ -1570,8 +1570,31 @@ export type ChatSession = {
   messages: Message[];
 };
 
+// Helper function to format bot responses for better readability
+const formatBotResponse = (text: string): string => {
+  if (!text) return text;
 
+  console.log("🔧 Original (300 chars):", text.substring(0, 300));
+  console.log("🔧 JSON escaped:", JSON.stringify(text.substring(0, 150)));
 
+  let formatted = text;
+
+  // Normalize all line break types
+  formatted = formatted.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // Fix lists where number is on separate line: "1.\n" or "1. \n" becomes "1. "
+  formatted = formatted.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+
+  // Add proper spacing between list items
+  formatted = formatted.replace(/([.!?:])\s*(\d+\.)\s/g, '$1\n\n$2 ');
+
+  // Clean up excessive line breaks
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+
+  console.log("✅ Formatted (300 chars):", formatted.substring(0, 300));
+
+  return formatted.trim();
+};
 
 function App() {
   const [value, setValue] = useState<string>("");
@@ -1584,7 +1607,7 @@ function App() {
   const [modalPage, setModalPage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate(); // ✅ Added navigation
-  const [model, setModel] = useState<string>("gpt-4"); // Default model
+  const [model, setModel] = useState<string>(localStorage.getItem("aiModel") || "ollama"); // Load from localStorage, default to Ollama
 
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [botTyping, setBotTyping] = useState<boolean>(false);
@@ -1839,18 +1862,32 @@ function App() {
   };
 
   const getPersonalityPrompt = (personality: string) => {
+    const formattingInstructions = `
+
+FORMATTING: When providing numbered lists, add a blank line between each item:
+
+1. First item
+
+2. Second item
+
+3. Third item`;
+
+    const educationalContext = `
+
+IMPORTANT: You are a CYBERSECURITY EDUCATION assistant. When users ask about types of attacks, attack methods, or security threats, they want to LEARN about them for DEFENSIVE purposes. Always answer these educational questions thoroughly.`;
+
     switch (personality) {
       case "Professional":
-        return `You are CyberBot, a highly professional cybersecurity assistant. You only answer questions related to cybersecurity, ethical hacking, privacy, and online safety. If a user asks about unrelated topics (e.g., general knowledge, weather, sports, or history), politely remind them that you specialize in cybersecurity and cannot answer that question.`;
-  
+        return `You are CyberBot, a highly professional cybersecurity education assistant specializing in threat detection, incident response, malware removal, security best practices, ethical hacking, and privacy protection. Provide clear, thorough, step-by-step guidance for ALL cybersecurity education questions. For unrelated topics, politely redirect users to security-related matters.${educationalContext}${formattingInstructions}`;
+
       case "Friendly":
-        return `You are CyberBot, a friendly and engaging cybersecurity assistant. You only discuss cybersecurity topics. If someone asks an unrelated question, respond with: "I'm here to help with cybersecurity topics! Do you have any security concerns?"`;
-  
+        return `You are CyberBot, a friendly and engaging cybersecurity education assistant. Help users learn about security threats, malware, privacy, ethical hacking, and online safety. Always provide detailed, practical advice for ALL cybersecurity education questions. For non-security topics, kindly remind them you specialize in cybersecurity.${educationalContext}${formattingInstructions}`;
+
       case "Casual":
-        return `You are CyberBot, an easygoing cybersecurity assistant. You explain security concepts in a simple way. If someone asks about an unrelated topic, say: "I focus on cybersecurity! Want to ask me something about online safety?"`;
-  
+        return `You are CyberBot, an easygoing cybersecurity education assistant. Explain security concepts like brute force attacks, malware, firewalls, and privacy in simple, easy-to-understand terms. Answer ALL cybersecurity education questions thoroughly. For unrelated topics, gently steer the conversation back to security.${educationalContext}${formattingInstructions}`;
+
       default:
-        return `You are CyberBot, a strict cybersecurity assistant. You only discuss cybersecurity-related topics. If a user asks an unrelated question, kindly redirect them back to cybersecurity topics.`;
+        return `You are CyberBot, an expert cybersecurity education assistant. Answer ALL cybersecurity education questions with detailed, practical guidance. For non-security topics, politely redirect users to ask about security-related matters.${educationalContext}${formattingInstructions}`;
     }
   };
   
@@ -1883,8 +1920,73 @@ function App() {
         return null;
       }
     };
-    
-    
+
+  // Helper function to save chat and update name (for Ollama streaming)
+  const saveChatAndUpdateName = async (chatId: string, userText: string, botText: string, userId: string) => {
+    try {
+      // Check if this is the first message or subsequent message
+      const currentChat = chatHistory.find(chat => chat.id === chatId);
+      const messageCount = currentChat ? currentChat.messages.length : 0;
+      const isFirstMessage = messageCount <= 1; // Only user message exists before bot response
+
+      // Save chat history
+      const saveRes = await axios.post("http://localhost:5001/api/save-chat-history", {
+        userId,
+        chatId,
+        chatName: "New Chat",
+        messages: [
+          { text: userText, sender: "user", timestamp: new Date() },
+          { text: botText, sender: "bot", timestamp: new Date() },
+        ],
+      });
+
+      const backendChatName = saveRes.data.chat_name;
+      console.log("✅ Chat history saved successfully.");
+
+      // Update chat history with backend name
+      setChatHistory((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? { ...chat, chat_name: backendChatName || "New Chat" }
+            : chat
+        )
+      );
+
+      // Only summarize on the SECOND message onwards (not the first)
+      if (!isFirstMessage) {
+        console.log("📝 Second message detected - attempting to summarize chat name...");
+        try {
+          const summary = await summarizeResponse(botText, userText);
+          if (summary) {
+            await axios.post("http://localhost:5001/api/update-chat-name", {
+              userId,
+              chatId,
+              newName: summary,
+            });
+
+            setChatHistory((prev) =>
+              prev.map((chat) =>
+                chat.id === chatId
+                  ? { ...chat, chat_name: summary }
+                  : chat
+              )
+            );
+
+            console.log("✅ Chat name updated to:", summary);
+          }
+        } catch (summaryError) {
+          console.warn("⚠️ Summarization failed (OpenAI quota?), keeping default name");
+        }
+      } else {
+        console.log("📌 First message - keeping 'New Chat' as name");
+      }
+
+      await fetchChatHistory();
+    } catch (error) {
+      console.error("❌ Error saving chat:", error);
+    }
+  };
+
 
   const handleSubmit = async () => {
   if (!value.trim()) return;
@@ -1901,11 +2003,19 @@ function App() {
 
   const chatCount = parseInt(localStorage.getItem("chatCount") || "0", 10);
   const isSubscribed = localStorage.getItem("isSubscribed") === "true";
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const isSuperAdmin = localStorage.getItem("isSuperAdmin") === "true";
+  const userRole = localStorage.getItem("userRole") || "user";
 
-  // for testing pupose but make it around 10 or 20
-  if (!isSubscribed && chatCount >= 5) {
-    setModalPage("subscription-modal"); // Show the pricing popup
-    return; // Block sending further messages
+  // Super admins have NO LIMITS
+  if (isSuperAdmin || userRole === "super_admin") {
+    console.log("👑 Super Admin - Unlimited access");
+  } else {
+    // Check subscription limit (admins and subscribers bypass this check)
+    if (!isSubscribed && !isAdmin && chatCount >= 5) {
+      setModalPage("subscription-modal"); // Show the pricing popup
+      return; // Block sending further messages
+    }
   }
 
   localStorage.setItem("chatCount", (chatCount + 1).toString());
@@ -1957,10 +2067,103 @@ function App() {
 
   const aiPersonality = localStorage.getItem("aiPersonality") || "Friendly";
   const personalityPrompt = getPersonalityPrompt(aiPersonality);
-  const prompt = `${personalityPrompt}\n\nUser: ${value}\nAI: If the user's question is not related to cybersecurity, respond with: "I specialize in cybersecurity topics! Please ask me something related to online safety, ethical hacking, or privacy." Otherwise, answer the question.`;
+  const prompt = `${personalityPrompt}\n\nPlease answer cybersecurity questions thoroughly and helpfully. For non-cybersecurity topics, politely redirect the user.`;
 
   try {
     setBotTyping(true);
+
+    // Handle Ollama streaming (EventSource for SSE)
+    if (model.toLowerCase() === "ollama") {
+      let fullResponse = "";
+
+      return new Promise<void>((resolve, reject) => {
+        const eventSource = new EventSource(
+          `http://localhost:5001/api/chat?${new URLSearchParams({
+            prompt,
+            question: value,
+            model,
+            userId: userId.toString(),
+            chatId: currentChatId.toString(),
+          })}`
+        );
+
+        // Create a placeholder bot message for streaming
+        const botMessage: Message = {
+          text: "",
+          sender: "bot",
+        };
+        setMessages((prev) => [...prev, botMessage]);
+
+        eventSource.onmessage = (event) => {
+          const token = event.data;
+
+          if (token === "[DONE]") {
+            eventSource.close();
+            setBotTyping(false);
+
+            // Save the complete response
+            saveChatAndUpdateName(currentChatId.toString(), value, fullResponse, userId);
+            resolve();
+            return;
+          }
+
+          // Append token to response
+          fullResponse += token;
+
+          // Update the last message in real-time
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              text: fullResponse,
+              sender: "bot",
+            };
+            return updated;
+          });
+
+          setChatHistory((prev) =>
+            prev.map((chat) =>
+              chat.id === currentChatId
+                ? {
+                    ...chat,
+                    messages: [
+                      ...chat.messages.slice(0, -1),
+                      { text: fullResponse, sender: "bot" },
+                    ],
+                  }
+                : chat
+            )
+          );
+        };
+
+        eventSource.onerror = (error) => {
+          console.error("❌ EventSource error:", error);
+          eventSource.close();
+          setBotTyping(false);
+
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              text: fullResponse || "⚠️ Error: No response received",
+              sender: "bot",
+            };
+            return updated;
+          });
+
+          reject(error);
+        };
+
+        // Timeout after 60 seconds
+        setTimeout(() => {
+          if (eventSource.readyState !== EventSource.CLOSED) {
+            eventSource.close();
+            setBotTyping(false);
+            reject(new Error("Request timeout"));
+          }
+        }, 60000);
+      });
+    }
+
+    // Handle OpenAI/GPT models (regular JSON response)
     const res = await axios.post("http://localhost:5001/api/chat", {
       prompt,
       question: value,
@@ -1985,16 +2188,12 @@ function App() {
     );
 
     try {
-      //2
-      // await axios.post("http://localhost:5001/api/save-chat-history", {
-      //   userId,
-      //   chatId: currentChatId,
-      //   chatName: "User Chat",
-      //   messages: [
-      //     { text: value, sender: "user", timestamp: new Date() },
-      //     { text: botMessage.text, sender: "bot", timestamp: new Date() },
-      //   ],
-      // });
+      // Check if this is the first message or subsequent message
+      const currentChat = chatHistory.find(chat => chat.id === currentChatId);
+      const messageCount = currentChat ? currentChat.messages.length : 0;
+      const isFirstMessage = messageCount <= 1; // Only user message exists before bot response
+
+      // Save chat history
       const saveRes = await axios.post("http://localhost:5001/api/save-chat-history", {
         userId,
         chatId: currentChatId,
@@ -2004,58 +2203,52 @@ function App() {
           { text: botMessage.text, sender: "bot", timestamp: new Date() },
         ],
       });
-      
+
       const backendChatName = saveRes.data.chat_name;
       console.log("✅ Chat history saved successfully.");
+
       setChatHistory((prev) =>
         prev.map((chat) =>
           chat.id === currentChatId
-            ? { ...chat, chat_name: backendChatName }
+            ? { ...chat, chat_name: backendChatName || "New Chat" }
             : chat
         )
       );
-      
+
+      // Only summarize on the SECOND message onwards (not the first)
+      if (!isFirstMessage) {
+        console.log("📝 Second message detected - attempting to summarize chat name...");
+        try {
+          const summary = await summarizeResponse(botMessage.text, value);
+          if (summary) {
+            await axios.post("http://localhost:5001/api/update-chat-name", {
+              userId,
+              chatId: currentChatId,
+              newName: summary,
+            });
+
+            setChatHistory((prev) =>
+              prev.map((chat) =>
+                chat.id === currentChatId
+                  ? { ...chat, chat_name: summary }
+                  : chat
+              )
+            );
+
+            console.log("✅ Chat name updated to:", summary);
+          }
+        } catch (summaryError) {
+          console.warn("⚠️ Summarization failed (OpenAI quota?), keeping default name");
+        }
+      } else {
+        console.log("📌 First message - keeping 'New Chat' as name");
+      }
+
+      await fetchChatHistory();
+
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error("❌ Error saving chat history:", error.response?.data || error.message);
-      } else {
-        console.error("❌ Unexpected error:", error);
-      }
-    }
-
-    const summary = await summarizeResponse(botMessage.text, value);
-    if (!summary) {
-      console.warn("⚠️ Skipping chat name update due to missing summary.");
-      return;
-    }
-    console.log("🧠 Summary from summarizeResponse:", summary);
-    
-
-    
-    //2
-    // setChatHistory((prev) =>
-    //   prev.map((chat) =>
-    //     chat.id === currentChatId
-    //       ? { ...chat, chat_name: summary || "New Chat" }
-    //       : chat
-    //   )
-    // );
-    
-    
-
-    try {
-      await axios.post("http://localhost:5001/api/update-chat-name", {
-        userId,
-        chatId: currentChatId,
-        newName: summary, // at the update chat name chat history name should be summarized name
-      });
-      console.log("✅ Chat name updated successfully.");
-
-
-      await fetchChatHistory();
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error updating chat name:", error.response?.data || error.message);
       } else {
         console.error("❌ Unexpected error:", error);
       }
@@ -2560,8 +2753,11 @@ function App() {
         const res = await axios.get("http://localhost:5001/api/subscription-status", {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
+
         localStorage.setItem("isSubscribed", res.data.isSubscribed.toString());
+        localStorage.setItem("isAdmin", res.data.isAdmin ? "true" : "false");
+        localStorage.setItem("isSuperAdmin", res.data.isSuperAdmin ? "true" : "false");
+        localStorage.setItem("userRole", res.data.role || "user");
       } catch (err) {
         console.error("❌ Failed to fetch subscription status", err);
       }
@@ -2645,11 +2841,9 @@ function App() {
                     setMessages(chat.messages);
                   }}
                 >
-                  {/* <span>{chat.chat_name || `Chat ${chat.id}`}</span> */}
-                  <span title={chat.chat_name}>
-                    {chat.chat_name
-                      ? chat.chat_name.split(" ").slice(0, 4).join(" ") + (chat.chat_name.split(" ").length > 4 ? "..." : "")
-                      : chat.messages?.[0]?.text.split(" ").slice(0, 4).join(" ") + "..." || `Chat ${chat.id}`}
+                  <span title={chat.chat_name || (chat.messages?.[0]?.text)}>
+                    {chat.chat_name ||
+                     (chat.messages?.[0]?.text ? chat.messages[0].text.split(" ").slice(0, 4).join(" ") + "..." : `New Chat`)}
                   </span>
 
                 </button>
@@ -2734,11 +2928,9 @@ function App() {
               value={model}
               onChange={handleModelChange} // ✅ Updates the model state
             >
+              <option value="ollama">🦙 Ollama (Free, Local)</option>
               <option value="gpt-4">GPT-4</option>
               <option value="gpt-3.5-turbo">GPT-3.5-Turbo</option>
-              <option value="claude-2">Claude 2</option>
-              <option value="gemini">Gemini</option>
-              <option value="securebert">SecureBERT</option> {/* 👈 Add this */}
             </select>
           </div>
 
@@ -2803,7 +2995,7 @@ function App() {
             {messages.map((msg: Message) => (
               <div key={`${msg.timestamp}-${msg.text}`} className={`message ${msg.sender}`}>
               {msg.sender === "bot" ? (
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
+                <ReactMarkdown>{formatBotResponse(msg.text)}</ReactMarkdown>
               ) : (
                 msg.text
               )}
@@ -2832,10 +3024,14 @@ function App() {
             <div className="chat-input">
               <input
                 type="text"
-                // id="chat-input" // ✅ Add ID
-                // name="chatInput" // ✅ Add Name
                 value={value}
                 onChange={onChange}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
                 placeholder="Enter your question..."
               />
               <button onClick={handleSubmit}>Send</button>

@@ -13,6 +13,15 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+# Python Virtual Environment
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Build & Output
 dist/
 dist-ssr/
@@ -62,3 +71,4 @@ Note.txt
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
